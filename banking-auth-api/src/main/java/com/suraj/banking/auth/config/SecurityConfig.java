@@ -49,10 +49,15 @@ public class SecurityConfig {
                 .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
             .and()
 
+            // Allow H2 console iframes (X-Frame-Options blocks them by default)
+            .headers().frameOptions().disable()
+            .and()
+
             .authorizeHttpRequests()
                 .antMatchers("/api/auth/**").permitAll()
                 .antMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                .antMatchers("/actuator/health").permitAll()
+                .antMatchers("/actuator/health", "/actuator/info").permitAll()
+                .antMatchers("/h2-console/**").permitAll()
                 .antMatchers(HttpMethod.GET, "/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             .and()
