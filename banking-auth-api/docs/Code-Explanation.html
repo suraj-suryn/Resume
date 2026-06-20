@@ -47,8 +47,16 @@
   th { background: #2d3748; color: #90cdf4; padding: 10px 14px; text-align: left; font-size: 13px; }
   td { padding: 9px 14px; border-bottom: 1px solid #2d3748; font-size: 13px; color: #cbd5e0; }
   tr:hover td { background: #1a1d2e; }
-  .flow { background: #1a202c; border: 1px solid #4299e1; border-radius: 8px; padding: 20px; margin: 16px 0; font-family: monospace; font-size: 13px; }
-  .flow .arrow { color: #4299e1; }
+  .flow { margin: 16px 0; }
+  .flow-step { background: #1a202c; border: 1px solid #2d3748; border-radius: 8px; padding: 14px 18px; margin-bottom: 4px; position: relative; }
+  .flow-step .layer-badge { display: inline-block; background: #2b6cb0; color: #bee3f8; border-radius: 4px; font-size: 11px; font-weight: 700; padding: 2px 9px; margin-right: 8px; letter-spacing: 0.5px; }
+  .flow-step .layer-name { color: #90cdf4; font-weight: 700; font-size: 14px; }
+  .flow-step ul { margin: 8px 0 0 20px; }
+  .flow-step ul li { color: #a0aec0; font-size: 13px; margin-bottom: 3px; }
+  .flow-step ul li span.ok { color: #68d391; }
+  .flow-step ul li span.warn { color: #f6ad55; }
+  .flow-arrow { text-align: center; color: #4299e1; font-size: 18px; line-height: 1; margin: 0; }
+  .flow-start, .flow-end { background: #1a3a5c; border: 1px solid #4299e1; border-radius: 8px; padding: 10px 18px; margin-bottom: 4px; color: #63b3ed; font-weight: 600; font-size: 13px; font-family: monospace; }
   .qa { background: #1a202c; border-radius: 8px; margin: 12px 0; }
   .qa-q { background: #2d3748; padding: 10px 16px; border-radius: 8px 8px 0 0; color: #f6e05e; font-weight: 600; }
   .qa-a { padding: 12px 16px; color: #cbd5e0; }
@@ -140,53 +148,73 @@
 </ul>
 
 <h3 id="s1-flow">Request Flow — What Happens When You Call an API</h3>
+<p style="color:#718096;margin-bottom:12px;">Example: <span class="highlight">POST /api/accounts</span> (create a bank account)</p>
 <div class="flow">
-Browser / Postman sends: POST /api/accounts
-          │
-          ▼
-<span class="arrow">──────────────────────────────────────────────────────</span>
-<strong>Layer 1 — AuditLoggingFilter</strong>  (@Order 1 = runs FIRST)
-  Logs: [AUDIT-IN] POST /api/accounts  IP=127.0.0.1
-<span class="arrow">──────────────────────────────────────────────────────</span>
-          │
-          ▼
-<strong>Layer 2 — JwtAuthFilter</strong>
-  Reads "Authorization: Bearer eyJhbG..." header
-  Calls JwtService.isTokenValid(token)
-  If valid → sets user identity in SecurityContext
-  If missing/invalid → continues as "anonymous user"
-<span class="arrow">──────────────────────────────────────────────────────</span>
-          │
-          ▼
-<strong>Layer 3 — Spring Security (SecurityConfig rules)</strong>
-  Checks: is /api/accounts in permitAll() list? NO
-  Checks: is user authenticated? YES (JWT was valid)
-  Checks: does user have required role? YES (USER role)
-  → ALLOW
-<span class="arrow">──────────────────────────────────────────────────────</span>
-          │
-          ▼
-<strong>Layer 4 — AccountController</strong>
-  @PostMapping("/api/accounts")
-  Validates @RequestBody (Bean Validation)
-  Calls AccountService.createAccount(...)
-<span class="arrow">──────────────────────────────────────────────────────</span>
-          │
-          ▼
-<strong>Layer 5 — AccountServiceImpl</strong>
-  Business logic: generate account number, save to DB
-  Calls AccountRepository.save(account)
-<span class="arrow">──────────────────────────────────────────────────────</span>
-          │
-          ▼
-<strong>Layer 6 — AccountRepository (Spring Data JPA)</strong>
-  Translates to SQL: INSERT INTO accounts (...)
-  Sends to H2 / PostgreSQL database
-<span class="arrow">──────────────────────────────────────────────────────</span>
-          │
-          ▼
-Response: 201 Created  {"success":true,"data":{...}}
-  AuditLoggingFilter logs: [AUDIT-OUT] 201 (45ms)
+  <div class="flow-start">&#127760; Browser / Postman &nbsp;→&nbsp; POST /api/accounts &nbsp;[Authorization: Bearer eyJhbG...]</div>
+  <div class="flow-arrow">▼</div>
+
+  <div class="flow-step">
+    <span class="layer-badge">LAYER 1</span><span class="layer-name">AuditLoggingFilter</span> &nbsp;<span class="badge">@Order(1) — runs FIRST</span>
+    <ul>
+      <li>Logs: <span class="ok">[AUDIT-IN]</span> POST /api/accounts &nbsp;IP=127.0.0.1</li>
+      <li>Stores start time for response duration calculation</li>
+    </ul>
+  </div>
+  <div class="flow-arrow">▼</div>
+
+  <div class="flow-step">
+    <span class="layer-badge">LAYER 2</span><span class="layer-name">JwtAuthFilter</span> &nbsp;<span class="badge">OncePerRequestFilter</span>
+    <ul>
+      <li>Reads <span class="highlight">Authorization: Bearer eyJhbG...</span> header</li>
+      <li>Calls <span class="highlight">JwtService.isTokenValid(token)</span></li>
+      <li><span class="ok">If valid</span> → extracts username, sets identity in <span class="highlight">SecurityContext</span></li>
+      <li><span class="warn">If missing/invalid</span> → continues as anonymous user (Security will block next)</li>
+    </ul>
+  </div>
+  <div class="flow-arrow">▼</div>
+
+  <div class="flow-step">
+    <span class="layer-badge">LAYER 3</span><span class="layer-name">Spring Security</span> &nbsp;<span class="badge">SecurityConfig rules</span>
+    <ul>
+      <li>Is <span class="highlight">/api/accounts</span> in <span class="highlight">permitAll()</span>? &nbsp;<span style="color:#fc8181;">NO</span></li>
+      <li>Is user authenticated? &nbsp;<span class="ok">YES</span> (JWT was valid)</li>
+      <li>Does user have required role (USER)? &nbsp;<span class="ok">YES</span></li>
+      <li>→ <span class="ok">ALLOW — request passes through</span></li>
+    </ul>
+  </div>
+  <div class="flow-arrow">▼</div>
+
+  <div class="flow-step">
+    <span class="layer-badge">LAYER 4</span><span class="layer-name">AccountController</span> &nbsp;<span class="badge">@RestController</span>
+    <ul>
+      <li><span class="highlight">@PostMapping("/api/accounts")</span> method is invoked</li>
+      <li>Bean Validation runs on <span class="highlight">@RequestBody</span> — rejects if fields missing</li>
+      <li>Calls <span class="highlight">AccountService.createAccount(...)</span></li>
+    </ul>
+  </div>
+  <div class="flow-arrow">▼</div>
+
+  <div class="flow-step">
+    <span class="layer-badge">LAYER 5</span><span class="layer-name">AccountServiceImpl</span> &nbsp;<span class="badge">@Service</span>
+    <ul>
+      <li>Business logic: generate unique account number</li>
+      <li>Creates <span class="highlight">Account</span> entity, sets owner, type, balance</li>
+      <li>Calls <span class="highlight">AccountRepository.save(account)</span></li>
+    </ul>
+  </div>
+  <div class="flow-arrow">▼</div>
+
+  <div class="flow-step">
+    <span class="layer-badge">LAYER 6</span><span class="layer-name">AccountRepository</span> &nbsp;<span class="badge">Spring Data JPA</span>
+    <ul>
+      <li>Hibernate translates to SQL: <span class="highlight">INSERT INTO accounts (...)</span></li>
+      <li>Executes against H2 (dev) or PostgreSQL (prod)</li>
+      <li>Returns saved entity with generated <span class="highlight">id</span></li>
+    </ul>
+  </div>
+  <div class="flow-arrow">▼</div>
+
+  <div class="flow-start">&#9989; Response: <strong>201 Created</strong> &nbsp;{"success":true,"data":{"id":1,"accountNumber":"ACC-...",...}} &nbsp;|&nbsp; AuditLoggingFilter logs: [AUDIT-OUT] 201 (45ms)</div>
 </div>
 
 <h3 id="s1-swagger">Swagger UI — What You Saw in the Browser</h3>
