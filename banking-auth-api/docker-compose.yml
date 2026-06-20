@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+
+  postgres:
+    image: postgres:14-alpine
+    container_name: banking-postgres
+    environment:
+      POSTGRES_DB: banking_auth_db
+      POSTGRES_USER: banking_user
+      POSTGRES_PASSWORD: banking_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U banking_user -d banking_auth_db"]
+      interval: 10s
+      retries: 5
+
+  banking-auth-api:
+    build: .
+    container_name: banking-auth-api
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://postgres:5432/banking_auth_db
+      DB_USERNAME: banking_user
+      DB_PASSWORD: banking_pass
+      # IMPORTANT: replace with a strong secret (>= 32 chars) in real deployments
+      JWT_SECRET: replace-with-a-strong-secret-in-production-min-32-chars
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

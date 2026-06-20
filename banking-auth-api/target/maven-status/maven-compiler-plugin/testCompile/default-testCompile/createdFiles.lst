@@ -1,0 +1,3 @@
+com\suraj\banking\auth\service\AuthServiceTest.class
+com\suraj\banking\auth\security\JwtServiceTest.class
+com\suraj\banking\auth\service\AccountServiceTest.class
