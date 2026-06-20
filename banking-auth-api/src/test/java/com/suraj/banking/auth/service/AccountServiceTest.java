@@ -61,7 +61,7 @@ class AccountServiceTest {
         when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
         when(accountRepository.save(any(Account.class))).thenReturn(mockAccount);
 
-        AccountResponse response = accountService.createAccount("testuser", AccountType.SAVINGS);
+        AccountResponse response = accountService.createAccount("testuser", AccountType.SAVINGS, new java.math.BigDecimal("1000.00"));
 
         assertNotNull(response);
         assertEquals("ACC123456", response.getAccountNumber());

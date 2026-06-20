@@ -28,12 +28,12 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public AccountResponse createAccount(String username, AccountType accountType) {
+    public AccountResponse createAccount(String username, AccountType accountType, BigDecimal initialBalance) {
         User user = findUserOrThrow(username);
 
         Account account = Account.builder()
                 .accountNumber(generateUniqueAccountNumber())
-                .balance(BigDecimal.ZERO)
+                .balance(initialBalance != null && initialBalance.compareTo(BigDecimal.ZERO) >= 0 ? initialBalance : BigDecimal.ZERO)
                 .accountType(accountType)
                 .user(user)
                 .build();

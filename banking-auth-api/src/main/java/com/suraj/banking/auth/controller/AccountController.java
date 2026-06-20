@@ -4,6 +4,7 @@ import com.suraj.banking.auth.dto.response.AccountResponse;
 import com.suraj.banking.auth.dto.response.ApiResponse;
 import com.suraj.banking.auth.entity.enums.AccountType;
 import com.suraj.banking.auth.service.AccountService;
+import java.math.BigDecimal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,8 +32,9 @@ public class AccountController {
     @PreAuthorize("hasAnyRole('USER', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<AccountResponse>> createAccount(
             @RequestParam AccountType accountType,
+            @RequestParam(defaultValue = "0.00") BigDecimal initialBalance,
             @AuthenticationPrincipal UserDetails userDetails) {
-        AccountResponse account = accountService.createAccount(userDetails.getUsername(), accountType);
+        AccountResponse account = accountService.createAccount(userDetails.getUsername(), accountType, initialBalance);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Account opened successfully", account));
     }
