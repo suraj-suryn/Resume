@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banking Auth API — Complete Code Explanation</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+  .sidebar { position: fixed; left: 0; top: 0; width: 270px; height: 100vh; overflow-y: auto; background: #1a1d2e; border-right: 1px solid #2d3748; padding: 16px 0; z-index: 100; }
+  .sidebar h2 { font-size: 13px; color: #63b3ed; text-transform: uppercase; letter-spacing: 1px; padding: 8px 20px 4px; }
+  .sidebar a { display: block; padding: 5px 20px 5px 28px; font-size: 13px; color: #a0aec0; text-decoration: none; border-left: 2px solid transparent; }
+  .sidebar a:hover { color: #63b3ed; border-left-color: #63b3ed; background: #2d3748; }
+  .sidebar .section-link { padding-left: 20px; color: #90cdf4; font-weight: 600; font-size: 13px; }
+  .main { margin-left: 270px; padding: 40px 48px; max-width: 1100px; }
+  h1 { font-size: 2.2em; color: #63b3ed; border-bottom: 2px solid #2d3748; padding-bottom: 12px; margin-bottom: 8px; }
+  .subtitle { color: #718096; margin-bottom: 40px; font-size: 1.05em; }
+  h2 { font-size: 1.6em; color: #90cdf4; margin: 50px 0 16px; border-left: 4px solid #4299e1; padding-left: 14px; }
+  h3 { font-size: 1.2em; color: #68d391; margin: 32px 0 10px; }
+  h4 { font-size: 1em; color: #f6e05e; margin: 20px 0 8px; }
+  p { margin-bottom: 12px; color: #cbd5e0; }
+  pre { background: #1a202c; border: 1px solid #2d3748; border-radius: 8px; padding: 18px; overflow-x: auto; margin: 12px 0 20px; font-size: 13px; line-height: 1.6; }
+  code { font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; }
+  pre code { color: #e2e8f0; }
+  .kw { color: #63b3ed; } /* keyword - blue */
+  .an { color: #f6ad55; } /* annotation - orange */
+  .st { color: #68d391; } /* string - green */
+  .cm { color: #718096; font-style: italic; } /* comment - grey */
+  .cl { color: #90cdf4; } /* class name - light blue */
+  .nu { color: #fc8181; } /* number - red */
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; margin: 2px; }
+  .tag-blue { background: #2b6cb0; color: #bee3f8; }
+  .tag-green { background: #276749; color: #c6f6d5; }
+  .tag-orange { background: #7b341e; color: #feebc8; }
+  .tag-red { background: #742a2a; color: #fed7d7; }
+  .tag-purple { background: #44337a; color: #e9d8fd; }
+  .box { border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
+  .box-blue { background: #1a3a5c; border-left: 4px solid #4299e1; }
+  .box-green { background: #1a3a2a; border-left: 4px solid #48bb78; }
+  .box-yellow { background: #3a3000; border-left: 4px solid #ecc94b; }
+  .box-red { background: #3a1a1a; border-left: 4px solid #fc8181; }
+  .box-purple { background: #2d1b69; border-left: 4px solid #9f7aea; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .compare-box { background: #1a1d2e; border: 1px solid #2d3748; border-radius: 8px; padding: 14px; }
+  .compare-box h4 { margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th { background: #2d3748; color: #90cdf4; padding: 10px 14px; text-align: left; font-size: 13px; }
+  td { padding: 9px 14px; border-bottom: 1px solid #2d3748; font-size: 13px; color: #cbd5e0; }
+  tr:hover td { background: #1a1d2e; }
+  .flow { background: #1a202c; border: 1px solid #4299e1; border-radius: 8px; padding: 20px; margin: 16px 0; font-family: monospace; font-size: 13px; }
+  .flow .arrow { color: #4299e1; }
+  .qa { background: #1a202c; border-radius: 8px; margin: 12px 0; }
+  .qa-q { background: #2d3748; padding: 10px 16px; border-radius: 8px 8px 0 0; color: #f6e05e; font-weight: 600; }
+  .qa-a { padding: 12px 16px; color: #cbd5e0; }
+  .badge { display: inline-block; background: #2b6cb0; color: #bee3f8; border-radius: 4px; font-size: 11px; padding: 1px 7px; margin-left: 6px; vertical-align: middle; }
+  .divider { height: 1px; background: #2d3748; margin: 40px 0; }
+  ul, ol { margin: 8px 0 12px 24px; }
+  li { margin-bottom: 5px; color: #cbd5e0; }
+  .highlight { background: #2d3748; border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 13px; color: #f6ad55; }
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <h2>Contents</h2>
+  <a class="section-link" href="#s1">1. Project Overview</a>
+  <a href="#s1-flow">Request Flow</a>
+  <a href="#s1-swagger">Swagger UI</a>
+  <a class="section-link" href="#s2">2. Maven / pom.xml</a>
+  <a href="#s2-parent">spring-boot-starter-parent</a>
+  <a href="#s2-deps">Each Dependency</a>
+  <a class="section-link" href="#s3">3. Core Annotations</a>
+  <a href="#s3-springboot">@SpringBootApplication</a>
+  <a href="#s3-config">@Configuration + @Bean</a>
+  <a href="#s3-stereo">Stereotype Annotations</a>
+  <a href="#s3-value">@Value</a>
+  <a class="section-link" href="#s4">4. JPA & Entities</a>
+  <a href="#s4-entity">@Entity, @Table</a>
+  <a href="#s4-id">@Id, @GeneratedValue</a>
+  <a href="#s4-column">@Column, @Enumerated</a>
+  <a href="#s4-relations">@OneToMany, @ManyToOne</a>
+  <a href="#s4-prepersist">@PrePersist</a>
+  <a href="#s4-repo">Repositories</a>
+  <a href="#s4-query">@Query + Pageable</a>
+  <a class="section-link" href="#s5">5. Lombok</a>
+  <a href="#s5-builders">@Builder, @Data</a>
+  <a href="#s5-constructors">Constructors</a>
+  <a class="section-link" href="#s6">6. DTOs</a>
+  <a href="#s6-why">Why DTOs?</a>
+  <a href="#s6-valid">Bean Validation</a>
+  <a href="#s6-json">@JsonInclude</a>
+  <a class="section-link" href="#s7">7. Spring Security</a>
+  <a href="#s7-what">What Security Does</a>
+  <a href="#s7-chain">SecurityFilterChain</a>
+  <a href="#s7-csrf">CSRF Disabled</a>
+  <a href="#s7-stateless">STATELESS Sessions</a>
+  <a href="#s7-rbac">@PreAuthorize RBAC</a>
+  <a href="#s7-bcrypt">BCrypt Passwords</a>
+  <a href="#s7-userdetails">UserDetails / Service</a>
+  <a class="section-link" href="#s8">8. JWT</a>
+  <a href="#s8-what">What is JWT?</a>
+  <a href="#s8-structure">Token Structure</a>
+  <a href="#s8-jwtservice">JwtService Code</a>
+  <a href="#s8-access-refresh">Access vs Refresh</a>
+  <a class="section-link" href="#s9">9. Filters</a>
+  <a href="#s9-what">What is a Filter?</a>
+  <a href="#s9-once">OncePerRequestFilter</a>
+  <a href="#s9-jwt-filter">JwtAuthFilter Step by Step</a>
+  <a href="#s9-audit">AuditLoggingFilter</a>
+  <a class="section-link" href="#s10">10. Exception Handling</a>
+  <a href="#s10-hierarchy">Exception Hierarchy</a>
+  <a href="#s10-global">@RestControllerAdvice</a>
+  <a class="section-link" href="#s11">11. Controllers</a>
+  <a href="#s11-annotations">All Annotations</a>
+  <a href="#s11-auth">AuthController</a>
+  <a href="#s11-account">AccountController</a>
+  <a class="section-link" href="#s12">12. Service Layer</a>
+  <a href="#s12-interface">Interface Pattern</a>
+  <a href="#s12-transactional">@Transactional</a>
+  <a class="section-link" href="#s13">13. Testing</a>
+  <a href="#s13-mockito">Mockito Annotations</a>
+  <a href="#s13-tests">Test Examples</a>
+  <a class="section-link" href="#s14">14. Interview Q&amp;A</a>
+  <a class="section-link" href="#s15">15. Swagger UI Guide</a>
+</nav>
+
+<div class="main">
+<h1>Banking Auth API — Complete Code Explanation</h1>
+<p class="subtitle">Every annotation · Every library · Every decision — explained from scratch with your own code</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s1">1. Project Overview</h2>
+
+<p>This project is a <strong>REST API</strong> for a banking system. Its main job is:</p>
+<ul>
+  <li>Let users <strong>register</strong> and <strong>login</strong></li>
+  <li>Issue <strong>JWT tokens</strong> (like a digital pass) on login</li>
+  <li>Let authenticated users <strong>open accounts, transfer money, view history</strong></li>
+  <li>Protect every endpoint so only the right person can access it</li>
+</ul>
+
+<h3 id="s1-flow">Request Flow — What Happens When You Call an API</h3>
+<div class="flow">
+Browser / Postman sends: POST /api/accounts
+          │
+          ▼
+<span class="arrow">──────────────────────────────────────────────────────</span>
+<strong>Layer 1 — AuditLoggingFilter</strong>  (@Order 1 = runs FIRST)
+  Logs: [AUDIT-IN] POST /api/accounts  IP=127.0.0.1
+<span class="arrow">──────────────────────────────────────────────────────</span>
+          │
+          ▼
+<strong>Layer 2 — JwtAuthFilter</strong>
+  Reads "Authorization: Bearer eyJhbG..." header
+  Calls JwtService.isTokenValid(token)
+  If valid → sets user identity in SecurityContext
+  If missing/invalid → continues as "anonymous user"
+<span class="arrow">──────────────────────────────────────────────────────</span>
+          │
+          ▼
+<strong>Layer 3 — Spring Security (SecurityConfig rules)</strong>
+  Checks: is /api/accounts in permitAll() list? NO
+  Checks: is user authenticated? YES (JWT was valid)
+  Checks: does user have required role? YES (USER role)
+  → ALLOW
+<span class="arrow">──────────────────────────────────────────────────────</span>
+          │
+          ▼
+<strong>Layer 4 — AccountController</strong>
+  @PostMapping("/api/accounts")
+  Validates @RequestBody (Bean Validation)
+  Calls AccountService.createAccount(...)
+<span class="arrow">──────────────────────────────────────────────────────</span>
+          │
+          ▼
+<strong>Layer 5 — AccountServiceImpl</strong>
+  Business logic: generate account number, save to DB
+  Calls AccountRepository.save(account)
+<span class="arrow">──────────────────────────────────────────────────────</span>
+          │
+          ▼
+<strong>Layer 6 — AccountRepository (Spring Data JPA)</strong>
+  Translates to SQL: INSERT INTO accounts (...)
+  Sends to H2 / PostgreSQL database
+<span class="arrow">──────────────────────────────────────────────────────</span>
+          │
+          ▼
+Response: 201 Created  {"success":true,"data":{...}}
+  AuditLoggingFilter logs: [AUDIT-OUT] 201 (45ms)
+</div>
+
+<h3 id="s1-swagger">Swagger UI — What You Saw in the Browser</h3>
+<div class="box box-blue">
+  <p><strong>URL:</strong> <span class="highlight">localhost:8080/swagger-ui/index.html</span></p>
+  <p>Swagger is an <strong>interactive documentation tool</strong>. It reads your code's annotations and auto-generates a web page where you can test every API endpoint without Postman.</p>
+  <p><strong>The "Available Authorizations" popup</strong> appeared because you clicked Authorize. You paste your JWT token there, and Swagger adds <span class="highlight">Authorization: Bearer &lt;token&gt;</span> to every request automatically.</p>
+  <p><strong>Why it knows about Bearer auth:</strong> Your <span class="highlight">SwaggerConfig.java</span> defines a <span class="highlight">SecurityScheme</span> of type HTTP/Bearer — Swagger reads that and shows the popup.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s2">2. Maven & pom.xml — The Build System</h2>
+
+<p>Maven is the <strong>build tool</strong>. Think of it as a package manager (like npm for JavaScript). <span class="highlight">pom.xml</span> lists all the libraries your project needs and how to build it.</p>
+
+<h3 id="s2-parent">spring-boot-starter-parent</h3>
+<pre><code><span class="tag-blue">&lt;parent&gt;</span>
+    <span class="tag-blue">&lt;groupId&gt;</span>org.springframework.boot<span class="tag-blue">&lt;/groupId&gt;</span>
+    <span class="tag-blue">&lt;artifactId&gt;</span>spring-boot-starter-parent<span class="tag-blue">&lt;/artifactId&gt;</span>
+    <span class="tag-blue">&lt;version&gt;</span>2.7.18<span class="tag-blue">&lt;/version&gt;</span>
+<span class="tag-blue">&lt;/parent&gt;</span></code></pre>
+<div class="box box-blue">
+  <p><strong>What this does:</strong> Inherits default configuration — Java version plugin settings, dependency version management, encoding settings. You don't need to specify versions for most Spring libraries because the parent already knows which versions work together.</p>
+  <p><strong>If you removed it:</strong> You'd need to manually specify the version of every single dependency and ensure they're all compatible. Very tedious.</p>
+</div>
+
+<h3 id="s2-deps">Each Dependency Explained</h3>
+<table>
+  <tr><th>Dependency</th><th>What it gives you</th><th>If you removed it</th></tr>
+  <tr><td><span class="highlight">spring-boot-starter-web</span></td><td>Embedded Tomcat server + Spring MVC (makes @RestController work)</td><td>App won't start; no HTTP server</td></tr>
+  <tr><td><span class="highlight">spring-boot-starter-security</span></td><td>Spring Security — authentication + authorization framework</td><td>All endpoints become public; no JWT validation</td></tr>
+  <tr><td><span class="highlight">spring-boot-starter-data-jpa</span></td><td>Spring Data JPA + Hibernate — talk to databases using Java objects instead of SQL</td><td>Can't use @Entity, @Repository, or JpaRepository</td></tr>
+  <tr><td><span class="highlight">spring-boot-starter-validation</span></td><td>Bean Validation — @NotBlank, @Email, @Size annotations on DTOs</td><td>Input validation annotations ignored; bad data reaches service layer</td></tr>
+  <tr><td><span class="highlight">spring-boot-starter-actuator</span></td><td>Production endpoints — /actuator/health, /actuator/info</td><td>/actuator/health returns 404</td></tr>
+  <tr><td><span class="highlight">jjwt-api / jjwt-impl / jjwt-jackson</span></td><td>JWT library — create and verify JSON Web Tokens</td><td>Can't generate or parse JWT; whole auth system breaks</td></tr>
+  <tr><td><span class="highlight">springdoc-openapi-ui</span></td><td>Swagger UI — auto-generates interactive API docs at /swagger-ui.html</td><td>No Swagger UI</td></tr>
+  <tr><td><span class="highlight">h2</span></td><td>In-memory/file database for development; no installation needed</td><td>App needs a real database even for local testing</td></tr>
+  <tr><td><span class="highlight">postgresql</span></td><td>PostgreSQL JDBC driver for production database</td><td>Can't connect to PostgreSQL in production</td></tr>
+  <tr><td><span class="highlight">lombok</span></td><td>Auto-generates getters, setters, constructors, builders at compile time</td><td>Must write all boilerplate Java code manually (hundreds of lines)</td></tr>
+  <tr><td><span class="highlight">spring-boot-starter-test</span></td><td>JUnit 5 + Mockito + AssertJ for unit tests</td><td>Can't write tests</td></tr>
+  <tr><td><span class="highlight">spring-security-test</span></td><td>@WithMockUser and security test utilities</td><td>Can't test security-protected endpoints</td></tr>
+</table>
+
+<div class="box box-yellow">
+  <strong>Why jjwt is split into 3 jars?</strong><br>
+  <span class="highlight">jjwt-api</span> = the interfaces (what you code against)<br>
+  <span class="highlight">jjwt-impl</span> = the actual implementation (runtime only — you never import it directly)<br>
+  <span class="highlight">jjwt-jackson</span> = JSON serialization (runtime only — jjwt uses Jackson internally)<br>
+  This separation means if jjwt releases a new impl, you don't need to change your code.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s3">3. Core Spring Annotations</h2>
+
+<h3 id="s3-springboot">@SpringBootApplication</h3>
+<pre><code><span class="an">@SpringBootApplication</span>
+<span class="kw">public class</span> <span class="cl">BankingAuthApiApplication</span> {
+    <span class="kw">public static void</span> main(<span class="cl">String</span>[] args) {
+        <span class="cl">SpringApplication</span>.run(<span class="cl">BankingAuthApiApplication</span>.<span class="kw">class</span>, args);
+    }
+}</code></pre>
+<div class="box box-blue">
+  <p><strong>What it does:</strong> This is actually 3 annotations in 1:</p>
+  <ul>
+    <li><span class="highlight">@SpringBootConfiguration</span> — marks this as a configuration class</li>
+    <li><span class="highlight">@EnableAutoConfiguration</span> — tells Spring Boot to auto-configure everything (sees H2 on classpath → auto-configures H2 datasource)</li>
+    <li><span class="highlight">@ComponentScan</span> — scans the current package and sub-packages for @Component, @Service, @Repository, @Controller classes and registers them as Spring beans</li>
+  </ul>
+  <p><strong>If you replaced it with just @Configuration:</strong> Spring would start but nothing would be auto-configured — no embedded server, no datasource, no security.</p>
+</div>
+
+<h3 id="s3-config">@Configuration and @Bean</h3>
+<pre><code><span class="an">@Configuration</span>   <span class="cm">// This class can define beans</span>
+<span class="an">@EnableWebSecurity</span>
+<span class="kw">public class</span> <span class="cl">SecurityConfig</span> {
+
+    <span class="an">@Bean</span>   <span class="cm">// Spring will call this method and manage the returned object</span>
+    <span class="kw">public</span> <span class="cl">PasswordEncoder</span> passwordEncoder() {
+        <span class="kw">return new</span> <span class="cl">BCryptPasswordEncoder</span>();
+    }
+
+    <span class="an">@Bean</span>
+    <span class="kw">public</span> <span class="cl">SecurityFilterChain</span> securityFilterChain(<span class="cl">HttpSecurity</span> http) { ... }
+}</code></pre>
+<div class="box box-green">
+  <p><strong>@Configuration</strong> — Tells Spring: "This class contains bean definitions." Spring reads all @Bean methods inside it at startup.</p>
+  <p><strong>@Bean</strong> — Tells Spring: "Call this method once, store the result, and give it to anyone who asks for a PasswordEncoder." This is called <em>Dependency Injection</em>.</p>
+  <p><strong>Real-world analogy:</strong> @Configuration is like a factory. @Bean is like a production line in that factory. When you need a PasswordEncoder, you don't say "new BCryptPasswordEncoder()" — you ask the factory and it gives you the one it already made.</p>
+  <p><strong>Why not just use "new" everywhere?</strong> If you use "new", you create a new object every time. With @Bean, Spring creates one object and reuses it everywhere (Singleton by default). Also, Spring can inject other dependencies into the object automatically.</p>
+</div>
+
+<h3 id="s3-stereo">Stereotype Annotations — @Service, @Repository, @RestController, @Component</h3>
+<p>These are all variations of <strong>@Component</strong>. They all tell Spring "create an instance of this class and manage it." The difference is semantic:</p>
+<table>
+  <tr><th>Annotation</th><th>Used on</th><th>What it signals</th><th>Extra behaviour</th></tr>
+  <tr><td><span class="highlight">@Component</span></td><td>Any class</td><td>Generic Spring-managed bean</td><td>None</td></tr>
+  <tr><td><span class="highlight">@Service</span></td><td>Service classes</td><td>Business logic layer</td><td>None (just clarity)</td></tr>
+  <tr><td><span class="highlight">@Repository</span></td><td>DAO classes</td><td>Data access layer</td><td>Auto-translates DB exceptions to Spring's DataAccessException</td></tr>
+  <tr><td><span class="highlight">@RestController</span></td><td>Controller classes</td><td>HTTP request handler</td><td>= @Controller + @ResponseBody (auto-converts return value to JSON)</td></tr>
+  <tr><td><span class="highlight">@Configuration</span></td><td>Config classes</td><td>Bean factory</td><td>Methods annotated with @Bean are intercepted by Spring proxy</td></tr>
+</table>
+
+<div class="box box-yellow">
+  <strong>What is a "Bean"?</strong><br>
+  A bean is simply a Java object that Spring creates and manages. When Spring starts, it scans for all classes annotated with the above annotations, creates one instance of each, and puts them in a container called the <em>Application Context</em>. When any class needs another class, Spring injects it automatically.
+</div>
+
+<h3 id="s3-value">@Value — Reading from application.properties</h3>
+<pre><code><span class="an">@Value</span>(<span class="st">"${app.jwt.secret}"</span>)
+<span class="kw">private</span> <span class="cl">String</span> jwtSecret;
+
+<span class="an">@Value</span>(<span class="st">"${app.jwt.expiration-ms}"</span>)
+<span class="kw">private long</span> jwtExpirationMs;</code></pre>
+<div class="box box-blue">
+  <p>In application.properties: <span class="highlight">app.jwt.secret=banking-auth-api-secret-key...</span></p>
+  <p><strong>What @Value does:</strong> At startup, Spring reads the properties file and injects the value directly into the field. You never hardcode secrets in Java code.</p>
+  <p><strong>If you hardcoded it:</strong> <span class="highlight">private String secret = "my-secret";</span> — the secret is in your source code and gets committed to git. Anyone who sees your repo sees your secret. Very bad for security.</p>
+  <p><strong>In production:</strong> application-prod.properties uses <span class="highlight">${JWT_SECRET}</span> — this reads from environment variables, so the secret is never in any file.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s4">4. JPA & Entities — Mapping Java to Database</h2>
+
+<p>JPA (Java Persistence API) lets you work with database records as Java objects. You never write SQL manually for basic operations.</p>
+
+<h3 id="s4-entity">@Entity and @Table</h3>
+<pre><code><span class="an">@Entity</span>
+<span class="an">@Table</span>(name = <span class="st">"users"</span>)
+<span class="kw">public class</span> <span class="cl">User</span> {
+    ...
+}</code></pre>
+<div class="box box-blue">
+  <p><strong>@Entity</strong> — Tells Hibernate (the JPA implementation): "This Java class corresponds to a database table." Hibernate will create a <em>users</em> table automatically (because <span class="highlight">spring.jpa.hibernate.ddl-auto=update</span>).</p>
+  <p><strong>@Table(name = "users")</strong> — The table name. If you omit this, Hibernate uses the class name ("user"). But "USER" is a reserved word in SQL, so we specify "users".</p>
+  <p><strong>If you removed @Entity:</strong> Hibernate ignores this class entirely. No table, no queries — saving a User throws an exception.</p>
+</div>
+
+<h3 id="s4-id">@Id and @GeneratedValue</h3>
+<pre><code><span class="an">@Id</span>
+<span class="an">@GeneratedValue</span>(strategy = <span class="cl">GenerationType</span>.IDENTITY)
+<span class="kw">private</span> <span class="cl">Long</span> id;</code></pre>
+<div class="box box-green">
+  <p><strong>@Id</strong> — This field is the primary key of the table.</p>
+  <p><strong>@GeneratedValue(strategy = IDENTITY)</strong> — The database auto-generates the ID (like AUTO_INCREMENT in MySQL, SERIAL in PostgreSQL). You don't set it — the DB does.</p>
+  <p><strong>Other strategies:</strong></p>
+  <ul>
+    <li><span class="highlight">IDENTITY</span> — DB generates it (most common, works with PostgreSQL/MySQL)</li>
+    <li><span class="highlight">SEQUENCE</span> — Uses a DB sequence object (best for PostgreSQL performance)</li>
+    <li><span class="highlight">AUTO</span> — Hibernate decides which strategy to use</li>
+    <li><span class="highlight">TABLE</span> — Uses a separate table to track IDs (slowest, rarely used)</li>
+  </ul>
+</div>
+
+<h3 id="s4-column">@Column and @Enumerated</h3>
+<pre><code><span class="an">@Column</span>(unique = <span class="kw">true</span>, nullable = <span class="kw">false</span>, length = <span class="nu">50</span>)
+<span class="kw">private</span> <span class="cl">String</span> username;
+
+<span class="an">@Column</span>(precision = <span class="nu">19</span>, scale = <span class="nu">4</span>)
+<span class="kw">private</span> <span class="cl">BigDecimal</span> balance;
+
+<span class="an">@Enumerated</span>(<span class="cl">EnumType</span>.STRING)
+<span class="kw">private</span> <span class="cl">Role</span> role;</code></pre>
+<div class="box box-blue">
+  <p><strong>@Column(unique=true)</strong> — Creates a UNIQUE constraint in the DB. Two users can't have the same username.</p>
+  <p><strong>@Column(nullable=false)</strong> — Creates a NOT NULL constraint. Username can never be null.</p>
+  <p><strong>BigDecimal(precision=19, scale=4)</strong> — For money: 19 total digits, 4 decimal places. Example: 123456789012345.6789. <strong>Never use float or double for money</strong> — they have rounding errors (0.1 + 0.2 = 0.30000000000000004).</p>
+  <p><strong>@Enumerated(EnumType.STRING)</strong> — Stores the enum as a string ("USER", "ADMIN") in the DB, not as a number (0, 1). String is safer — if you reorder the enum, numbers would change meaning.</p>
+</div>
+
+<h3 id="s4-relations">@OneToMany and @ManyToOne — Relationships</h3>
+<pre><code><span class="cm">// In User.java — one user has many accounts</span>
+<span class="an">@OneToMany</span>(mappedBy = <span class="st">"user"</span>, cascade = <span class="cl">CascadeType</span>.ALL, fetch = <span class="cl">FetchType</span>.LAZY)
+<span class="kw">private</span> <span class="cl">List</span>&lt;<span class="cl">Account</span>&gt; accounts;
+
+<span class="cm">// In Account.java — many accounts belong to one user</span>
+<span class="an">@ManyToOne</span>(fetch = <span class="cl">FetchType</span>.LAZY)
+<span class="an">@JoinColumn</span>(name = <span class="st">"user_id"</span>)
+<span class="kw">private</span> <span class="cl">User</span> user;</code></pre>
+<div class="box box-green">
+  <p><strong>FetchType.LAZY</strong> — When you load a User from DB, Hibernate does NOT immediately load all their accounts. It only loads accounts when you actually access <span class="highlight">user.getAccounts()</span>. This is performance-efficient — you don't load data you don't need.</p>
+  <p><strong>FetchType.EAGER</strong> — Loads related data immediately, every time. Risky — if a user has 1000 transactions, you load all 1000 even when you just need the username.</p>
+  <p><strong>CascadeType.ALL</strong> — If you delete a User, Hibernate automatically deletes all their Accounts too. If you save a User with new Accounts in the list, Hibernate saves the Accounts too.</p>
+  <p><strong>@JoinColumn(name="user_id")</strong> — Creates a foreign key column named "user_id" in the accounts table.</p>
+</div>
+
+<h3 id="s4-prepersist">@PrePersist — Auto-set values before saving</h3>
+<pre><code><span class="an">@PrePersist</span>
+<span class="kw">protected void</span> onCreate() {
+    createdAt = <span class="cl">LocalDateTime</span>.now();
+    active = <span class="kw">true</span>;
+}</code></pre>
+<div class="box box-blue">
+  <p><strong>What it does:</strong> This method runs automatically, right before Hibernate saves a new record to the database. You never need to call it manually.</p>
+  <p><strong>Why use it:</strong> If you set createdAt in the constructor or service, someone could accidentally pass a different date. With @PrePersist, the DB layer always sets the correct timestamp — impossible to override from outside.</p>
+  <p><strong>Similar annotations:</strong> @PreUpdate (runs before UPDATE), @PostLoad (runs after SELECT), @PostPersist (runs after INSERT).</p>
+</div>
+
+<h3 id="s4-repo">Repositories — Spring Data JPA Magic</h3>
+<pre><code><span class="kw">public interface</span> <span class="cl">UserRepository</span> <span class="kw">extends</span> <span class="cl">JpaRepository</span>&lt;<span class="cl">User</span>, <span class="cl">Long</span>&gt; {
+    <span class="cl">Optional</span>&lt;<span class="cl">User</span>&gt; findByUsername(<span class="cl">String</span> username);
+    <span class="kw">boolean</span> existsByEmail(<span class="cl">String</span> email);
+}</code></pre>
+<div class="box box-purple">
+  <p><strong>JpaRepository&lt;User, Long&gt;</strong> — By extending this, your repository gets 18+ methods for free:</p>
+  <ul>
+    <li><span class="highlight">save(user)</span> — INSERT or UPDATE</li>
+    <li><span class="highlight">findById(1L)</span> — SELECT WHERE id=1</li>
+    <li><span class="highlight">findAll()</span> — SELECT * FROM users</li>
+    <li><span class="highlight">delete(user)</span> — DELETE</li>
+    <li><span class="highlight">count()</span> — SELECT COUNT(*)</li>
+    <li>...and more</li>
+  </ul>
+  <p><strong>findByUsername(String username)</strong> — You don't write any SQL! Spring Data reads the method name and generates: <span class="highlight">SELECT * FROM users WHERE username = ?</span></p>
+  <p><strong>existsByEmail(String email)</strong> — Generates: <span class="highlight">SELECT COUNT(*) > 0 FROM users WHERE email = ?</span></p>
+  <p><strong>Method naming rules:</strong> findBy / existsBy / countBy / deleteBy + field name. You can chain: <span class="highlight">findByUsernameAndActive(String, boolean)</span></p>
+  <p><strong>You never create an implementation class.</strong> Spring creates a proxy at runtime that implements all these methods.</p>
+</div>
+
+<h3 id="s4-query">@Query and Pageable — Custom Queries</h3>
+<pre><code><span class="cm">// In TransactionRepository.java</span>
+<span class="an">@Query</span>(<span class="st">"SELECT t FROM Transaction t WHERE t.account.id = :accountId ORDER BY t.createdAt DESC"</span>)
+<span class="cl">Page</span>&lt;<span class="cl">Transaction</span>&gt; findByAccountId(<span class="an">@Param</span>(<span class="st">"accountId"</span>) <span class="cl">Long</span> accountId, <span class="cl">Pageable</span> pageable);</code></pre>
+<div class="box box-blue">
+  <p><strong>@Query</strong> — For when the method name convention isn't enough. You write JPQL (Java Persistence Query Language) — like SQL but uses Java class/field names, not table/column names.</p>
+  <p><strong>JPQL vs SQL:</strong></p>
+  <ul>
+    <li>SQL: <span class="highlight">SELECT * FROM transactions WHERE account_id = 1</span></li>
+    <li>JPQL: <span class="highlight">SELECT t FROM Transaction t WHERE t.account.id = 1</span></li>
+  </ul>
+  <p><strong>Pageable</strong> — Enables pagination. Caller passes <span class="highlight">PageRequest.of(0, 10)</span> — page 0, 10 records. The DB query becomes: <span class="highlight">SELECT ... LIMIT 10 OFFSET 0</span>. Returns a <span class="highlight">Page&lt;T&gt;</span> object containing the records AND total count.</p>
+  <p><strong>Why pagination:</strong> If a user has 10,000 transactions, you don't want to load all 10,000 at once. Pagination fetches 10 at a time.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s5">5. Lombok — Eliminating Boilerplate Code</h2>
+
+<p>Lombok is an annotation processor. It runs at <strong>compile time</strong> and generates Java code for you. Your source file is short; the compiled .class file has all the methods.</p>
+
+<h3 id="s5-builders">@Builder and @Data</h3>
+<pre><code><span class="an">@Data</span>           <span class="cm">// generates: getters + setters + toString + equals + hashCode</span>
+<span class="an">@Builder</span>        <span class="cm">// generates: builder pattern</span>
+<span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="cl">Account</span> {
+    <span class="kw">private</span> <span class="cl">Long</span> id;
+    <span class="kw">private</span> <span class="cl">String</span> accountNumber;
+    <span class="kw">private</span> <span class="cl">BigDecimal</span> balance;
+}</code></pre>
+
+<p>Without Lombok, you'd write:</p>
+<pre><code><span class="cm">// 50+ lines of boilerplate that Lombok generates for you:</span>
+<span class="kw">public</span> <span class="cl">Long</span> getId() { <span class="kw">return</span> id; }
+<span class="kw">public void</span> setId(<span class="cl">Long</span> id) { <span class="kw">this</span>.id = id; }
+<span class="kw">public</span> <span class="cl">String</span> getAccountNumber() { <span class="kw">return</span> accountNumber; }
+<span class="kw">public void</span> setAccountNumber(<span class="cl">String</span> n) { <span class="kw">this</span>.accountNumber = n; }
+<span class="cm">// ... and equals, hashCode, toString, builder class...</span></code></pre>
+
+<p>With @Builder, you can construct objects like this:</p>
+<pre><code><span class="cl">Account</span> account = <span class="cl">Account</span>.builder()
+    .accountNumber(<span class="st">"ACC123"</span>)
+    .balance(<span class="cl">BigDecimal</span>.ZERO)
+    .accountType(<span class="cl">AccountType</span>.SAVINGS)
+    .build();</code></pre>
+<div class="box box-green">
+  <strong>Why use builder pattern instead of constructor?</strong> If a class has 8 fields, a constructor call is: <span class="highlight">new Account(null, "ACC", null, ZERO, null, null, true, null)</span> — impossible to tell which null is which. Builder is readable and you only set what you need.
+</div>
+
+<h3 id="s5-constructors">Constructor Annotations</h3>
+<table>
+  <tr><th>Annotation</th><th>Generates</th><th>Used when</th></tr>
+  <tr><td><span class="highlight">@NoArgsConstructor</span></td><td>public Account() {}</td><td>JPA requires a no-arg constructor to instantiate entities from DB rows</td></tr>
+  <tr><td><span class="highlight">@AllArgsConstructor</span></td><td>Constructor with all fields</td><td>Used internally by @Builder</td></tr>
+  <tr><td><span class="highlight">@RequiredArgsConstructor</span></td><td>Constructor with final fields only</td><td>Used on @Service/@Configuration — Spring injects dependencies via constructor (best practice)</td></tr>
+</table>
+
+<div class="box box-yellow">
+  <strong>@RequiredArgsConstructor + final fields = Constructor Injection</strong><br>
+  In SecurityConfig: <span class="highlight">private final JwtAuthFilter jwtAuthFilter;</span><br>
+  Lombok generates: <span class="highlight">public SecurityConfig(JwtAuthFilter jwtAuthFilter) { this.jwtAuthFilter = jwtAuthFilter; }</span><br>
+  Spring sees this constructor and automatically provides the JwtAuthFilter bean.<br>
+  This is preferred over @Autowired field injection because: it makes dependencies explicit, enables immutability (final), and makes testing easier.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s6">6. DTOs — Data Transfer Objects</h2>
+
+<h3 id="s6-why">Why DTOs? Why not use Entity classes directly?</h3>
+<div class="compare-grid">
+  <div class="compare-box">
+    <h4 style="color:#fc8181">❌ Without DTO (expose Entity directly)</h4>
+    <pre><code><span class="cm">// If you return User entity:</span>
+{
+  "id": 1,
+  "username": "suraj",
+  "passwordHash": "$2a$10$...", <span class="cm">// EXPOSED!</span>
+  "accounts": [...], <span class="cm">// too much data</span>
+  "role": "USER"
+}</code></pre>
+    <p style="color:#fc8181">Security risk: password hash exposed. Performance issue: loads all related data.</p>
+  </div>
+  <div class="compare-box">
+    <h4 style="color:#68d391">✅ With DTO (return only what's needed)</h4>
+    <pre><code><span class="cm">// TokenResponse DTO returns:</span>
+{
+  "accessToken": "eyJ...",
+  "tokenType": "Bearer",
+  "username": "suraj",
+  "role": "USER"
+}</code></pre>
+    <p style="color:#68d391">Only safe, relevant fields. No internal data exposed.</p>
+  </div>
+</div>
+
+<h3 id="s6-valid">Bean Validation on DTOs</h3>
+<pre><code><span class="kw">public class</span> <span class="cl">RegisterRequest</span> {
+
+    <span class="an">@NotBlank</span>(message = <span class="st">"Username is required"</span>)
+    <span class="an">@Size</span>(min = <span class="nu">3</span>, max = <span class="nu">50</span>)
+    <span class="kw">private</span> <span class="cl">String</span> username;
+
+    <span class="an">@Email</span>(message = <span class="st">"Must be a valid email"</span>)
+    <span class="kw">private</span> <span class="cl">String</span> email;
+
+    <span class="an">@Size</span>(min = <span class="nu">6</span>, message = <span class="st">"Password must be at least 6 characters"</span>)
+    <span class="kw">private</span> <span class="cl">String</span> password;
+}</code></pre>
+
+<p>In the controller, <span class="highlight">@Valid</span> triggers validation:</p>
+<pre><code><span class="an">@PostMapping</span>(<span class="st">"/register"</span>)
+<span class="kw">public</span> <span class="cl">ResponseEntity</span> register(<span class="an">@Valid</span> <span class="an">@RequestBody</span> <span class="cl">RegisterRequest</span> request) {</code></pre>
+<div class="box box-blue">
+  <p>If validation fails, Spring automatically throws <span class="highlight">MethodArgumentNotValidException</span> before the method even runs. Your GlobalExceptionHandler catches it and returns a 400 with field-level errors:</p>
+  <pre><code>{ "success": false, "data": { "username": "must not be blank", "password": "size must be between 6 and ..." }}</code></pre>
+  <p><strong>If you removed @Valid:</strong> Invalid data would reach your service layer. A user could register with empty username, 1-character password, or invalid email.</p>
+</div>
+
+<h3 id="s6-json">@JsonInclude(NON_NULL)</h3>
+<pre><code><span class="an">@JsonInclude</span>(<span class="cl">JsonInclude</span>.Include.NON_NULL)
+<span class="kw">public class</span> <span class="cl">ApiResponse</span>&lt;T&gt; {
+    <span class="kw">private boolean</span> success;
+    <span class="kw">private</span> <span class="cl">String</span> message;
+    <span class="kw">private</span> T data;    <span class="cm">// can be null for error responses</span>
+}</code></pre>
+<div class="box box-blue">
+  <p><strong>Without this:</strong> <span class="highlight">{"success":false,"message":"Not found","data":null}</span> — <span class="highlight">data:null</span> is included</p>
+  <p><strong>With @JsonInclude(NON_NULL):</strong> <span class="highlight">{"success":false,"message":"Not found"}</span> — null fields are omitted, cleaner response</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s7">7. Spring Security</h2>
+
+<h3 id="s7-what">What Spring Security Does</h3>
+<div class="box box-blue">
+  <p>Spring Security sits between the HTTP request and your controllers like a bouncer at a club. It runs its logic before your code runs. You configure rules like: "Anyone can enter /api/auth/**. Only people with a valid JWT can enter /api/accounts/**."</p>
+</div>
+
+<h3 id="s7-chain">SecurityFilterChain — The Rulebook</h3>
+<pre><code><span class="an">@Bean</span>
+<span class="kw">public</span> <span class="cl">SecurityFilterChain</span> securityFilterChain(<span class="cl">HttpSecurity</span> http) <span class="kw">throws</span> <span class="cl">Exception</span> {
+    http
+        .csrf().disable()                    <span class="cm">// ← explained below</span>
+        .headers().frameOptions().disable()  <span class="cm">// ← for H2 console iframes</span>
+        .and()
+        .exceptionHandling()
+            .authenticationEntryPoint(
+                <span class="kw">new</span> <span class="cl">HttpStatusEntryPoint</span>(<span class="cl">HttpStatus</span>.UNAUTHORIZED))  <span class="cm">// ← returns 401 JSON</span>
+        .and()
+        .authorizeHttpRequests()
+            .antMatchers(<span class="st">"/api/auth/**"</span>).permitAll()        <span class="cm">// ← no JWT needed</span>
+            .antMatchers(<span class="st">"/h2-console/**"</span>).permitAll()
+            .antMatchers(<span class="st">"/actuator/health"</span>).permitAll()
+            .antMatchers(<span class="st">"/swagger-ui/**"</span>).permitAll()
+            .anyRequest().authenticated()                    <span class="cm">// ← everything else needs JWT</span>
+        .and()
+        .sessionManagement()
+            .sessionCreationPolicy(<span class="cl">SessionCreationPolicy</span>.STATELESS)  <span class="cm">// ← no sessions</span>
+        .and()
+        .addFilterBefore(jwtAuthFilter, <span class="cl">UsernamePasswordAuthenticationFilter</span>.<span class="kw">class</span>);
+
+    <span class="kw">return</span> http.build();
+}</code></pre>
+
+<h3 id="s7-csrf">CSRF Disabled — Why?</h3>
+<div class="box box-yellow">
+  <p><strong>CSRF (Cross-Site Request Forgery):</strong> An attack where a malicious website tricks your browser into making requests to your bank while you're logged in. Protection works by requiring a secret token in every form submission — only your real site knows it.</p>
+  <p><strong>Why we disable it:</strong> CSRF only matters for <em>cookie-based sessions</em>. Our API is <em>stateless JWT-based</em> — the client (mobile app, React app) explicitly adds the Authorization header with the JWT. A malicious website can't add that header. So CSRF protection is not needed and would just add complexity.</p>
+  <p><strong>If you enabled CSRF:</strong> Every POST/PUT/DELETE would need an extra CSRF token parameter. Postman and Swagger would stop working without extra configuration.</p>
+</div>
+
+<h3 id="s7-stateless">STATELESS Sessions — Why?</h3>
+<div class="compare-grid">
+  <div class="compare-box">
+    <h4>Session-based (traditional)</h4>
+    <p>Server creates a session, stores user data in memory or Redis. Client gets a session cookie. Every request: server looks up session in storage.</p>
+    <p style="color:#fc8181">Problem: Can't scale horizontally easily. If you have 3 servers, request might go to a server that doesn't have the session.</p>
+  </div>
+  <div class="compare-box">
+    <h4>JWT / STATELESS (our approach)</h4>
+    <p>Server issues a JWT containing all user info. Client sends JWT with every request. Server verifies the signature — no storage lookup needed.</p>
+    <p style="color:#68d391">Advantage: Any server can verify any token. Scales perfectly. No shared session storage needed.</p>
+  </div>
+</div>
+
+<h3 id="s7-rbac">@PreAuthorize — Method-Level Security</h3>
+<pre><code><span class="an">@PreAuthorize</span>(<span class="st">"isAuthenticated()"</span>)
+<span class="an">@PostMapping</span>
+<span class="kw">public</span> <span class="cl">ResponseEntity</span> createAccount(<span class="an">@AuthenticationPrincipal</span> <span class="cl">UserDetails</span> userDetails) {...}
+
+<span class="cm">// Or check role:</span>
+<span class="an">@PreAuthorize</span>(<span class="st">"hasRole('ADMIN')"</span>)
+<span class="kw">public</span> <span class="cl">ResponseEntity</span> adminEndpoint() {...}</code></pre>
+<div class="box box-blue">
+  <p><strong>@EnableMethodSecurity</strong> in SecurityConfig enables this. @PreAuthorize runs before the method body. If the condition is false, Spring throws <span class="highlight">AccessDeniedException</span> (403 Forbidden) before your code executes.</p>
+  <p><strong>Spring Expression Language (SpEL):</strong> <span class="highlight">isAuthenticated()</span>, <span class="highlight">hasRole('ADMIN')</span>, <span class="highlight">hasAnyRole('USER','MANAGER')</span>, <span class="highlight">principal.username == #username</span></p>
+  <p><strong>Why ROLE_ prefix:</strong> Spring Security internally stores roles as "ROLE_USER", "ROLE_ADMIN". When you write <span class="highlight">hasRole('USER')</span>, Spring checks for "ROLE_USER". Your CustomUserDetailsService adds this prefix: <span class="highlight">"ROLE_" + user.getRole()</span>.</p>
+</div>
+
+<h3 id="s7-bcrypt">BCrypt — Password Hashing</h3>
+<pre><code><span class="cm">// When registering:</span>
+user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+
+<span class="cm">// When logging in (Spring Security does this internally):</span>
+passwordEncoder.matches(rawPassword, storedHash)  <span class="cm">// returns true/false</span></code></pre>
+<div class="box box-red">
+  <p><strong>NEVER store plain text passwords.</strong> BCrypt produces something like: <span class="highlight">$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy</span></p>
+  <p><strong>Key properties of BCrypt:</strong></p>
+  <ul>
+    <li>Same password always produces a different hash (due to random salt)</li>
+    <li>One-way — you can't reverse it back to the password</li>
+    <li>Slow by design — makes brute-force attacks expensive (cost factor 10 = 2^10 = 1024 rounds)</li>
+  </ul>
+  <p><strong>If you used MD5 or SHA256:</strong> These are fast hashing algorithms — attackers can test billions of passwords per second. BCrypt is intentionally slow.</p>
+</div>
+
+<h3 id="s7-userdetails">UserDetails and UserDetailsService</h3>
+<pre><code><span class="an">@Service</span>
+<span class="kw">public class</span> <span class="cl">CustomUserDetailsService</span> <span class="kw">implements</span> <span class="cl">UserDetailsService</span> {
+
+    <span class="an">@Override</span>
+    <span class="kw">public</span> <span class="cl">UserDetails</span> loadUserByUsername(<span class="cl">String</span> username) {
+        <span class="cl">User</span> user = userRepository.findByUsername(username)
+            .orElseThrow(() -> <span class="kw">new</span> <span class="cl">UsernameNotFoundException</span>(<span class="st">"User not found"</span>));
+
+        <span class="kw">return</span> <span class="cl">org.springframework.security.core.userdetails.User</span>
+            .withUsername(user.getUsername())
+            .password(user.getPasswordHash())
+            .authorities(<span class="st">"ROLE_"</span> + user.getRole())
+            .disabled(!user.isActive())
+            .build();
+    }
+}</code></pre>
+<div class="box box-blue">
+  <p><strong>UserDetailsService</strong> is a Spring Security interface with one method. Spring Security calls <span class="highlight">loadUserByUsername()</span> during login to get the user's details and verify the password.</p>
+  <p><strong>UserDetails</strong> is another Spring Security interface representing the logged-in user — contains username, hashed password, roles, and account status flags.</p>
+  <p><strong>The two User classes:</strong> Note we use <span class="highlight">com.suraj.banking.auth.entity.User</span> (your JPA entity) to load from DB, then convert to <span class="highlight">org.springframework.security.core.userdetails.User</span> (Spring's interface). These are two different classes with the same name.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s8">8. JWT — JSON Web Token</h2>
+
+<h3 id="s8-what">What is JWT?</h3>
+<div class="box box-blue">
+  <p>A JWT is a digitally signed string that carries information. When you log in, the server creates a JWT, signs it with a secret key, and sends it back. On every future request, you send the JWT. The server verifies the signature to confirm it hasn't been tampered with — no DB lookup needed.</p>
+  <p><strong>Real-world analogy:</strong> A JWT is like a signed cheque. Anyone can read the amount (it's not encrypted by default), but only the bank can create one with the valid signature. You can't forge it without the bank's secret stamp.</p>
+</div>
+
+<h3 id="s8-structure">Token Structure — Header.Payload.Signature</h3>
+<pre><code>eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdXJhajEyMyIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzE4ODc1MjAwLCJleHAiOjE3MTg4Nzg4MDB9.abc123signature
+
+<span class="cm">Part 1 (Header) — decoded:</span>
+{ "alg": "HS256" }
+
+<span class="cm">Part 2 (Payload/Claims) — decoded:</span>
+{
+  "sub": "suraj123",      <span class="cm">// subject = username</span>
+  "role": "USER",         <span class="cm">// custom claim we added</span>
+  "iat": 1718875200,      <span class="cm">// issued at (Unix timestamp)</span>
+  "exp": 1718878800       <span class="cm">// expires at (iat + 1 hour)</span>
+}
+
+<span class="cm">Part 3 (Signature):</span>
+HMACSHA256(base64(header) + "." + base64(payload), secret)</code></pre>
+<div class="box box-yellow">
+  <strong>Important:</strong> JWT payload is base64-encoded, NOT encrypted. Anyone can decode and read it. Never put sensitive data (passwords, credit card numbers) in a JWT payload. We only put username and role — both are non-sensitive.
+</div>
+
+<h3 id="s8-jwtservice">JwtService — Token Creation & Validation</h3>
+<pre><code><span class="kw">public</span> <span class="cl">String</span> generateAccessToken(<span class="cl">UserDetails</span> userDetails, <span class="cl">String</span> role) {
+    <span class="kw">return</span> <span class="cl">Jwts</span>.builder()
+        .setSubject(userDetails.getUsername())     <span class="cm">// "sub" claim</span>
+        .claim(<span class="st">"role"</span>, role)                      <span class="cm">// custom claim</span>
+        .setIssuedAt(<span class="kw">new</span> <span class="cl">Date</span>())                   <span class="cm">// "iat" claim</span>
+        .setExpiration(<span class="kw">new</span> <span class="cl">Date</span>(<span class="cl">System</span>.currentTimeMillis() + jwtExpirationMs))
+        .signWith(getSigningKey(), <span class="cl">SignatureAlgorithm</span>.HS256)
+        .compact();                                <span class="cm">// builds the string</span>
+}
+
+<span class="kw">private</span> <span class="cl">Key</span> getSigningKey() {
+    <span class="cm">// Converts the secret string to a cryptographic key</span>
+    <span class="kw">return</span> <span class="cl">Keys</span>.hmacShaKeyFor(<span class="cl">Decoders</span>.BASE64.decode(jwtSecret));
+}</code></pre>
+<div class="box box-blue">
+  <p><strong>HS256 (HMAC-SHA256):</strong> A symmetric signing algorithm — same secret key is used to sign and to verify. Simple and fast.</p>
+  <p><strong>Alternative — RS256 (RSA):</strong> Asymmetric — private key signs, public key verifies. Used when multiple services need to verify tokens without sharing the secret (e.g., microservices). More complex. HS256 is fine for a single-service API.</p>
+  <p><strong>Keys.hmacShaKeyFor():</strong> HS256 requires a key of at least 256 bits (32 bytes). This method enforces that requirement — throws exception if key is too short.</p>
+</div>
+
+<h3 id="s8-access-refresh">Access Token vs Refresh Token</h3>
+<table>
+  <tr><th></th><th>Access Token</th><th>Refresh Token</th></tr>
+  <tr><td>Purpose</td><td>Authorize API calls</td><td>Get new access token</td></tr>
+  <tr><td>Expiry</td><td>Short — 1 hour</td><td>Long — 24 hours</td></tr>
+  <tr><td>Sent with</td><td>Every API request</td><td>Only to /api/auth/refresh</td></tr>
+  <tr><td>Custom claims</td><td>role, username</td><td>username only</td></tr>
+  <tr><td>Why short expiry?</td><td>If stolen, damage limited to 1 hour</td><td>Used less often, lower exposure</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s9">9. Filters — Intercepting Every HTTP Request</h2>
+
+<h3 id="s9-what">What is a Filter?</h3>
+<div class="box box-blue">
+  <p>A Servlet Filter sits in front of your entire application. Every HTTP request passes through all filters before reaching your controller. Filters can read/modify the request, read/modify the response, or block the request entirely.</p>
+  <p><strong>Think of it as:</strong> Security checkpoints at an airport. Every passenger (request) goes through customs (filter chain) before boarding the plane (controller).</p>
+</div>
+
+<h3 id="s9-once">OncePerRequestFilter</h3>
+<pre><code><span class="kw">public class</span> <span class="cl">JwtAuthFilter</span> <span class="kw">extends</span> <span class="cl">OncePerRequestFilter</span> {
+    <span class="an">@Override</span>
+    <span class="kw">protected void</span> doFilterInternal(...) { ... }
+}</code></pre>
+<div class="box box-blue">
+  <p><strong>Why OncePerRequestFilter, not plain Filter?</strong> In some scenarios (like error forwarding), the Servlet filter chain can be called multiple times for the same original request. OncePerRequestFilter guarantees your logic runs exactly once per request, no matter what.</p>
+</div>
+
+<h3 id="s9-jwt-filter">JwtAuthFilter — Step by Step</h3>
+<pre><code><span class="an">@Component</span>
+<span class="kw">public class</span> <span class="cl">JwtAuthFilter</span> <span class="kw">extends</span> <span class="cl">OncePerRequestFilter</span> {
+
+    <span class="an">@Override</span>
+    <span class="kw">protected void</span> doFilterInternal(
+            <span class="cl">HttpServletRequest</span> request,
+            <span class="cl">HttpServletResponse</span> response,
+            <span class="cl">FilterChain</span> filterChain) <span class="kw">throws</span> <span class="cl">Exception</span> {
+
+        <span class="cm">// Step 1: Read the Authorization header</span>
+        <span class="cl">String</span> authHeader = request.getHeader(<span class="st">"Authorization"</span>);
+
+        <span class="cm">// Step 2: Check it starts with "Bearer "</span>
+        <span class="kw">if</span> (authHeader == <span class="kw">null</span> || !authHeader.startsWith(<span class="st">"Bearer "</span>)) {
+            filterChain.doFilter(request, response); <span class="cm">// no token, pass through</span>
+            <span class="kw">return</span>;
+        }
+
+        <span class="cm">// Step 3: Extract token (everything after "Bearer ")</span>
+        <span class="cl">String</span> token = authHeader.substring(<span class="nu">7</span>);
+
+        <span class="cm">// Step 4: Extract username from token</span>
+        <span class="cl">String</span> username = jwtService.extractUsername(token);
+
+        <span class="cm">// Step 5: If valid and not already authenticated</span>
+        <span class="kw">if</span> (username != <span class="kw">null</span> &&
+            <span class="cl">SecurityContextHolder</span>.getContext().getAuthentication() == <span class="kw">null</span>) {
+
+            <span class="cl">UserDetails</span> userDetails = userDetailsService.loadUserByUsername(username);
+
+            <span class="kw">if</span> (jwtService.isTokenValid(token, userDetails)) {
+                <span class="cm">// Step 6: Create authentication object</span>
+                <span class="cl">UsernamePasswordAuthenticationToken</span> authToken =
+                    <span class="kw">new</span> <span class="cl">UsernamePasswordAuthenticationToken</span>(
+                        userDetails, <span class="kw">null</span>, userDetails.getAuthorities());
+
+                <span class="cm">// Step 7: Store in SecurityContext — "this user is authenticated"</span>
+                <span class="cl">SecurityContextHolder</span>.getContext().setAuthentication(authToken);
+            }
+        }
+
+        <span class="cm">// Step 8: Continue to next filter / controller</span>
+        filterChain.doFilter(request, response);
+    }
+}</code></pre>
+<div class="box box-green">
+  <p><strong>SecurityContextHolder</strong> is like a thread-local storage. It holds who is currently logged in for this specific request's thread. When your controller calls <span class="highlight">@AuthenticationPrincipal UserDetails u</span>, Spring reads from SecurityContextHolder.</p>
+  <p><strong>Why not throw exception if token is missing?</strong> If there's no token, the filter just passes the request through as "anonymous". The SecurityConfig's <span class="highlight">.anyRequest().authenticated()</span> rule will then reject it with 401. Separation of concerns — filter authenticates, SecurityConfig authorizes.</p>
+</div>
+
+<h3 id="s9-audit">AuditLoggingFilter</h3>
+<pre><code><span class="an">@Component</span>
+<span class="an">@Order</span>(<span class="nu">1</span>)  <span class="cm">// runs FIRST in the filter chain</span>
+<span class="kw">public class</span> <span class="cl">AuditLoggingFilter</span> <span class="kw">extends</span> <span class="cl">OncePerRequestFilter</span> {
+
+    <span class="an">@Override</span>
+    <span class="kw">protected void</span> doFilterInternal(...) {
+        <span class="kw">long</span> start = <span class="cl">System</span>.currentTimeMillis();
+        <span class="cl">String</span> ip = getClientIp(request);
+
+        log.info(<span class="st">"[AUDIT-IN] {} {} IP={}"</span>, request.getMethod(), request.getRequestURI(), ip);
+
+        filterChain.doFilter(request, response);  <span class="cm">// run the rest of the chain</span>
+
+        <span class="cm">// This line runs AFTER the controller responds:</span>
+        log.info(<span class="st">"[AUDIT-OUT] status={} duration={}ms"</span>,
+            response.getStatus(), <span class="cl">System</span>.currentTimeMillis() - start);
+    }
+}</code></pre>
+<div class="box box-blue">
+  <p><strong>@Order(1)</strong> — Lowest number = highest priority. This filter runs before all others, so it can measure the total time including all other filters and the controller.</p>
+  <p><strong>X-Forwarded-For:</strong> When your app sits behind a proxy/load balancer, the real client IP is in this header. If it's missing, fall back to <span class="highlight">request.getRemoteAddr()</span>.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s10">10. Exception Handling</h2>
+
+<h3 id="s10-hierarchy">Exception Hierarchy in This Project</h3>
+<pre><code>RuntimeException (Java)
+    └── AccountNotFoundException     → 404 Not Found
+    └── InsufficientFundsException   → 422 Unprocessable Entity
+    └── DuplicateUserException       → 409 Conflict
+    └── InvalidTokenException        → 401 Unauthorized
+    └── UnauthorizedAccessException  → 403 Forbidden
+
+Spring's exceptions (handled too):
+    ├── BadCredentialsException      → 401 Unauthorized (wrong password)
+    ├── AccessDeniedException        → 403 Forbidden
+    └── MethodArgumentNotValidException → 400 Bad Request (validation)</code></pre>
+<div class="box box-blue">
+  <p><strong>Why extend RuntimeException, not Exception?</strong> Checked exceptions (extends Exception) must be declared in method signatures with <span class="highlight">throws</span> and must be caught. Unchecked/runtime exceptions don't need to be declared. For business exceptions, unchecked is cleaner — you don't want to pollute every method signature.</p>
+</div>
+
+<h3 id="s10-global">@RestControllerAdvice — Centralized Error Handling</h3>
+<pre><code><span class="an">@RestControllerAdvice</span>
+<span class="kw">public class</span> <span class="cl">GlobalExceptionHandler</span> {
+
+    <span class="an">@ExceptionHandler</span>(<span class="cl">AccountNotFoundException</span>.<span class="kw">class</span>)
+    <span class="an">@ResponseStatus</span>(<span class="cl">HttpStatus</span>.NOT_FOUND)
+    <span class="kw">public</span> <span class="cl">ApiResponse</span>&lt;<span class="cl">Void</span>&gt; handleNotFound(<span class="cl">AccountNotFoundException</span> ex) {
+        <span class="kw">return</span> <span class="cl">ApiResponse</span>.error(ex.getMessage());
+    }
+
+    <span class="an">@ExceptionHandler</span>(<span class="cl">MethodArgumentNotValidException</span>.<span class="kw">class</span>)
+    <span class="an">@ResponseStatus</span>(<span class="cl">HttpStatus</span>.BAD_REQUEST)
+    <span class="kw">public</span> <span class="cl">ApiResponse</span>&lt;<span class="cl">Map</span>&lt;<span class="cl">String</span>, <span class="cl">String</span>&gt;&gt; handleValidation(
+            <span class="cl">MethodArgumentNotValidException</span> ex) {
+
+        <span class="cl">Map</span>&lt;<span class="cl">String</span>, <span class="cl">String</span>&gt; errors = ex.getBindingResult()
+            .getFieldErrors().stream()
+            .collect(<span class="cl">Collectors</span>.toMap(
+                <span class="cl">FieldError</span>::getField,
+                <span class="cl">FieldError</span>::getDefaultMessage));
+
+        <span class="kw">return</span> <span class="cl">ApiResponse</span>.error(<span class="st">"Validation failed"</span>, errors);
+    }
+}</code></pre>
+<div class="box box-green">
+  <p><strong>@RestControllerAdvice</strong> = @ControllerAdvice + @ResponseBody. It's a global exception handler for all controllers. Without it, you'd have to write try-catch in every single controller method.</p>
+  <p><strong>Before:</strong></p>
+  <pre><code><span class="cm">// Every controller method would need this:</span>
+<span class="kw">try</span> {
+    <span class="kw">return</span> accountService.getAccount(id);
+} <span class="kw">catch</span> (<span class="cl">AccountNotFoundException</span> e) {
+    <span class="kw">return</span> ResponseEntity.notFound().build();
+}</code></pre>
+  <p><strong>After:</strong> Controller is clean. Exception is thrown anywhere, GlobalExceptionHandler catches it, returns consistent JSON.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s11">11. Controllers — The HTTP Layer</h2>
+
+<h3 id="s11-annotations">All Controller Annotations</h3>
+<table>
+  <tr><th>Annotation</th><th>What it does</th></tr>
+  <tr><td><span class="highlight">@RestController</span></td><td>= @Controller + @ResponseBody. Return value is serialized to JSON automatically.</td></tr>
+  <tr><td><span class="highlight">@RequestMapping("/api/auth")</span></td><td>Base path for all methods in this class.</td></tr>
+  <tr><td><span class="highlight">@PostMapping("/login")</span></td><td>Maps HTTP POST /api/auth/login to this method.</td></tr>
+  <tr><td><span class="highlight">@GetMapping("/{id}")</span></td><td>Maps HTTP GET /api/accounts/1 to this method.</td></tr>
+  <tr><td><span class="highlight">@DeleteMapping("/{id}")</span></td><td>Maps HTTP DELETE /api/accounts/1 to this method.</td></tr>
+  <tr><td><span class="highlight">@RequestBody</span></td><td>Deserializes JSON request body to Java object (uses Jackson).</td></tr>
+  <tr><td><span class="highlight">@PathVariable Long id</span></td><td>Extracts {id} from the URL path.</td></tr>
+  <tr><td><span class="highlight">@RequestHeader</span></td><td>Reads a specific HTTP header value.</td></tr>
+  <tr><td><span class="highlight">@RequestParam</span></td><td>Reads query parameters (?page=0&size=10).</td></tr>
+  <tr><td><span class="highlight">@AuthenticationPrincipal</span></td><td>Injects the currently logged-in UserDetails object.</td></tr>
+  <tr><td><span class="highlight">@Valid</span></td><td>Triggers Bean Validation on the @RequestBody.</td></tr>
+</table>
+
+<h3 id="s11-auth">AuthController — Login Flow</h3>
+<pre><code><span class="an">@RestController</span>
+<span class="an">@RequestMapping</span>(<span class="st">"/api/auth"</span>)
+<span class="an">@Tag</span>(name = <span class="st">"Authentication"</span>)  <span class="cm">// Swagger: groups endpoints under "Authentication"</span>
+<span class="kw">public class</span> <span class="cl">AuthController</span> {
+
+    <span class="an">@PostMapping</span>(<span class="st">"/login"</span>)
+    <span class="kw">public</span> <span class="cl">ResponseEntity</span>&lt;<span class="cl">ApiResponse</span>&lt;<span class="cl">TokenResponse</span>&gt;&gt; login(
+            <span class="an">@Valid</span> <span class="an">@RequestBody</span> <span class="cl">LoginRequest</span> request) {
+
+        <span class="cl">TokenResponse</span> tokens = authService.login(request);
+        <span class="kw">return</span> <span class="cl">ResponseEntity</span>.ok(<span class="cl">ApiResponse</span>.success(<span class="st">"Login successful"</span>, tokens));
+    }
+}</code></pre>
+<div class="box box-blue">
+  <p><strong>ResponseEntity&lt;ApiResponse&lt;TokenResponse&gt;&gt;</strong> — Nested generics. ResponseEntity lets you control the HTTP status code. ApiResponse is your wrapper. TokenResponse is the actual data. This gives full control: status + headers + body.</p>
+  <p><strong>Why not just return TokenResponse directly?</strong> You couldn't set 201 vs 200, or add custom headers. ResponseEntity is more explicit.</p>
+</div>
+
+<h3 id="s11-account">AccountController — Protected Endpoint</h3>
+<pre><code><span class="an">@RestController</span>
+<span class="an">@RequestMapping</span>(<span class="st">"/api/accounts"</span>)
+<span class="an">@PreAuthorize</span>(<span class="st">"isAuthenticated()"</span>)
+<span class="kw">public class</span> <span class="cl">AccountController</span> {
+
+    <span class="an">@GetMapping</span>(<span class="st">"/{id}"</span>)
+    <span class="kw">public</span> <span class="cl">ResponseEntity</span> getAccount(
+            <span class="an">@PathVariable</span> <span class="cl">Long</span> id,
+            <span class="an">@AuthenticationPrincipal</span> <span class="cl">UserDetails</span> userDetails) {
+
+        <span class="kw">return</span> <span class="cl">ResponseEntity</span>.ok(
+            <span class="cl">ApiResponse</span>.success(<span class="st">"Account retrieved"</span>,
+                accountService.getAccount(id, userDetails.getUsername())));
+    }
+}</code></pre>
+<div class="box box-blue">
+  <p><strong>@AuthenticationPrincipal UserDetails userDetails</strong> — Spring Security reads the authenticated user from SecurityContextHolder and injects it here. This was set by JwtAuthFilter earlier in the request.</p>
+  <p><strong>userDetails.getUsername()</strong> — We pass the username to the service, which then verifies that the account belongs to this user (IDOR protection — prevents user A from accessing user B's account).</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s12">12. Service Layer</h2>
+
+<h3 id="s12-interface">Interface + Implementation Pattern</h3>
+<pre><code><span class="cm">// Interface:</span>
+<span class="kw">public interface</span> <span class="cl">AccountService</span> {
+    <span class="cl">AccountResponse</span> createAccount(<span class="cl">String</span> username, <span class="cl">AccountType</span> type);
+    <span class="cl">List</span>&lt;<span class="cl">AccountResponse</span>&gt; getMyAccounts(<span class="cl">String</span> username);
+}
+
+<span class="cm">// Implementation:</span>
+<span class="an">@Service</span>
+<span class="kw">public class</span> <span class="cl">AccountServiceImpl</span> <span class="kw">implements</span> <span class="cl">AccountService</span> { ... }</code></pre>
+<div class="box box-green">
+  <p><strong>Why interface + impl?</strong></p>
+  <ul>
+    <li><strong>Testing:</strong> In tests, you can create a mock that implements the interface without touching the real implementation</li>
+    <li><strong>Flexibility:</strong> You could swap AccountServiceImpl with AccountServiceV2Impl without changing the controller</li>
+    <li><strong>Contracts:</strong> The interface defines <em>what</em> it does; the impl defines <em>how</em>. Controllers only depend on the interface</li>
+    <li><strong>Spring proxy:</strong> Spring wraps your @Service in a proxy to add @Transactional behaviour — this requires an interface</li>
+  </ul>
+</div>
+
+<h3 id="s12-transactional">@Transactional — Atomic Operations</h3>
+<pre><code><span class="an">@Transactional</span>
+<span class="kw">public</span> <span class="cl">TransactionResponse</span> transfer(
+        <span class="cl">Long</span> fromAccountId, <span class="cl">String</span> username, <span class="cl">TransferRequest</span> request) {
+
+    <span class="cl">Account</span> fromAccount = accountRepository.findById(fromAccountId)...;
+    <span class="cl">Account</span> toAccount = accountRepository.findByAccountNumber(...)...;
+
+    <span class="cm">// Check balance</span>
+    <span class="kw">if</span> (fromAccount.getBalance().compareTo(request.getAmount()) < <span class="nu">0</span>) {
+        <span class="kw">throw new</span> <span class="cl">InsufficientFundsException</span>(<span class="st">"Insufficient funds"</span>);
+    }
+
+    <span class="cm">// Debit source account</span>
+    fromAccount.setBalance(fromAccount.getBalance().subtract(request.getAmount()));
+
+    <span class="cm">// Credit target account</span>
+    toAccount.setBalance(toAccount.getBalance().add(request.getAmount()));
+
+    <span class="cm">// Create transaction record</span>
+    <span class="cl">Transaction</span> txn = <span class="cl">Transaction</span>.builder()...build();
+
+    accountRepository.save(fromAccount);
+    accountRepository.save(toAccount);
+    transactionRepository.save(txn);
+    <span class="kw">return</span> mapToResponse(txn);
+}</code></pre>
+<div class="box box-red">
+  <p><strong>@Transactional = all or nothing.</strong></p>
+  <p>Scenario: Balance is debited from source, then server crashes before crediting target. Without @Transactional, money disappears.</p>
+  <p>With @Transactional: If anything throws an exception, <strong>all changes are rolled back</strong> — both accounts return to original balances. Either the full transfer succeeds, or nothing changes.</p>
+  <p><strong>How it works:</strong> Spring wraps the method in a database transaction. On success → COMMIT. On exception → ROLLBACK.</p>
+  <p><strong>Default behaviour:</strong> Rolls back on RuntimeException. Does NOT roll back on checked exceptions. For checked exceptions, use: <span class="highlight">@Transactional(rollbackFor = Exception.class)</span></p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s13">13. Testing — JUnit 5 + Mockito</h2>
+
+<h3 id="s13-mockito">Mockito Annotations</h3>
+<pre><code><span class="an">@ExtendWith</span>(<span class="cl">MockitoExtension</span>.<span class="kw">class</span>)
+<span class="kw">class</span> <span class="cl">AuthServiceTest</span> {
+
+    <span class="an">@Mock</span>
+    <span class="kw">private</span> <span class="cl">UserRepository</span> userRepository;   <span class="cm">// fake — does not hit DB</span>
+
+    <span class="an">@Mock</span>
+    <span class="kw">private</span> <span class="cl">PasswordEncoder</span> passwordEncoder;  <span class="cm">// fake</span>
+
+    <span class="an">@InjectMocks</span>
+    <span class="kw">private</span> <span class="cl">AuthServiceImpl</span> authService;     <span class="cm">// real class, fake dependencies injected</span>
+}</code></pre>
+<div class="box box-blue">
+  <p><strong>@Mock</strong> — Creates a fake version of this class. By default, all methods return null/0/false. You program specific behaviour with <span class="highlight">when(...).thenReturn(...)</span>.</p>
+  <p><strong>@InjectMocks</strong> — Creates the real AuthServiceImpl and injects all @Mock objects into it. Your real code runs, but with fake dependencies — so tests are fast and don't need a database.</p>
+  <p><strong>Why mock the repository?</strong> You don't want unit tests to depend on a real database. Tests should be fast (milliseconds), isolated, and reproducible. A real DB connection is slow and flaky.</p>
+</div>
+
+<h3 id="s13-tests">Test Examples</h3>
+<pre><code><span class="an">@Test</span>
+<span class="kw">void</span> shouldRegisterNewUser() {
+    <span class="cm">// ARRANGE — set up mocks</span>
+    when(userRepository.existsByUsername(<span class="st">"testuser"</span>)).thenReturn(<span class="kw">false</span>);
+    when(userRepository.existsByEmail(<span class="st">"test@test.com"</span>)).thenReturn(<span class="kw">false</span>);
+    when(passwordEncoder.encode(<span class="st">"password123"</span>)).thenReturn(<span class="st">"$2a$hashed"</span>);
+    when(userRepository.save(any())).thenReturn(testUser);
+
+    <span class="cm">// ACT — call the real method</span>
+    <span class="cl">TokenResponse</span> result = authService.register(registerRequest);
+
+    <span class="cm">// ASSERT — verify the result</span>
+    assertThat(result).isNotNull();
+    assertThat(result.getUsername()).isEqualTo(<span class="st">"testuser"</span>);
+    verify(userRepository, times(<span class="nu">1</span>)).save(any(<span class="cl">User</span>.<span class="kw">class</span>));
+}
+
+<span class="an">@Test</span>
+<span class="kw">void</span> shouldThrowWhenUsernameAlreadyExists() {
+    when(userRepository.existsByUsername(anyString())).thenReturn(<span class="kw">true</span>);
+
+    <span class="cm">// This lambda should throw DuplicateUserException:</span>
+    assertThrows(<span class="cl">DuplicateUserException</span>.<span class="kw">class</span>,
+        () -> authService.register(registerRequest));
+}</code></pre>
+<div class="box box-green">
+  <p><strong>AAA Pattern (Arrange-Act-Assert):</strong> Every test should follow this structure.</p>
+  <p><strong>verify(userRepository, times(1)).save(...)</strong> — Verifies that the mock's save() method was called exactly once. Ensures your code actually persisted the user.</p>
+  <p><strong>assertThrows()</strong> — Verifies that the code throws the expected exception. If no exception is thrown, the test fails.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s14">14. Interview Q&A</h2>
+
+<div class="qa"><div class="qa-q">Q: What is Spring Boot and how is it different from Spring Framework?</div><div class="qa-a">Spring Framework is a large collection of modules for building Java applications. Spring Boot is built on top of it and adds: auto-configuration (no XML config needed), embedded server (Tomcat built-in), opinionated defaults (sensible configs out of the box), and starter dependencies that bundle commonly used libraries together.</div></div>
+
+<div class="qa"><div class="qa-q">Q: What is Dependency Injection and why use it?</div><div class="qa-a">Dependency Injection means a class doesn't create its own dependencies — it receives them from outside (from Spring). Example: AccountServiceImpl needs UserRepository. Instead of doing <span class="highlight">new UserRepository()</span>, Spring creates the UserRepository and "injects" it via the constructor. Benefits: testable (you can inject mocks), loosely coupled (swap implementations easily), managed lifecycle (Spring handles creation/destruction).</div></div>
+
+<div class="qa"><div class="qa-q">Q: Why use JWT instead of session-based authentication?</div><div class="qa-a">JWT is stateless — the server doesn't store anything. Each token carries all needed information (username, role, expiry) and is self-verifiable via the signature. Sessions require server-side storage; if you have multiple servers, you need a shared session store (Redis). JWT scales horizontally without any shared state.</div></div>
+
+<div class="qa"><div class="qa-q">Q: What is the difference between @Controller and @RestController?</div><div class="qa-a">@RestController = @Controller + @ResponseBody. @ResponseBody means the return value is written directly to the HTTP response body (serialized to JSON by Jackson). Without @ResponseBody (plain @Controller), Spring would try to find a view template (like a JSP/Thymeleaf file) matching the returned string.</div></div>
+
+<div class="qa"><div class="qa-q">Q: Why is @Transactional important for fund transfers?</div><div class="qa-a">A transfer involves multiple DB operations: debit one account and credit another. If the second operation fails, the first must be undone. @Transactional wraps both in a single database transaction. If anything fails, the entire transaction rolls back — money is never lost in transit.</div></div>
+
+<div class="qa"><div class="qa-q">Q: What is CSRF and why did we disable it?</div><div class="qa-a">CSRF is an attack where a malicious site tricks your browser into making requests to your API using your cookies. Protection adds a token to forms that only your real site knows. We disabled it because our API uses JWT Bearer tokens in headers — browsers can't be tricked into adding custom headers cross-origin, so CSRF is not applicable to our stateless API.</div></div>
+
+<div class="qa"><div class="qa-q">Q: What is the difference between @Mock and @Spy in Mockito?</div><div class="qa-a">@Mock creates a completely fake object — all methods do nothing by default. @Spy wraps a real object — real methods run unless you override specific ones with when(). For unit tests where we want to test our service logic in isolation, @Mock is appropriate — we don't want real DB calls.</div></div>
+
+<div class="qa"><div class="qa-q">Q: Why use BigDecimal for money instead of double?</div><div class="qa-a">floating-point types (float, double) can't represent decimal numbers exactly. <span class="highlight">0.1 + 0.2 = 0.30000000000000004</span>. For money, rounding errors are unacceptable. BigDecimal stores numbers exactly with configurable precision and scale. Java's BigDecimal.add(), subtract(), multiply() guarantee exact results.</div></div>
+
+<div class="qa"><div class="qa-q">Q: What is the role of OncePerRequestFilter?</div><div class="qa-a">In a Servlet container, the filter chain can potentially be invoked multiple times for the same request (e.g., when an error causes a forward to an error page). OncePerRequestFilter guarantees the filter logic executes exactly once per HTTP request by tracking execution in a request attribute.</div></div>
+
+<div class="qa"><div class="qa-q">Q: What is the purpose of LAZY loading in JPA?</div><div class="qa-a">LAZY loading defers the database query for related entities until you actually access them. If you load 100 users with EAGER loading on their transactions, you'd execute 101 queries (N+1 problem). With LAZY, you only load transactions when you explicitly access user.getTransactions(), reducing unnecessary database work.</div></div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<h2 id="s15">15. Swagger UI — Complete Usage Guide</h2>
+
+<div class="box box-blue">
+<p><strong>URL:</strong> <span class="highlight">http://localhost:8080/swagger-ui/index.html</span></p>
+<p>Swagger reads your Spring annotations (@RestController, @PostMapping, @RequestBody, etc.) and your springdoc @Operation/@Tag annotations, then auto-generates an interactive documentation page.</p>
+</div>
+
+<h3>Step-by-step: Test the full flow</h3>
+<ol>
+  <li style="margin-bottom:12px"><strong>Register</strong>: Expand Authentication → POST /api/auth/register → Try it out → Fill body → Execute<br>
+  <pre><code>{ "username": "suraj123", "email": "suraj@test.com", "password": "secret123" }</code></pre></li>
+  <li style="margin-bottom:12px"><strong>Copy token</strong>: From the response, copy the <span class="highlight">accessToken</span> value</li>
+  <li style="margin-bottom:12px"><strong>Authorize</strong>: Click green <strong>Authorize</strong> button (top right) → paste token → Authorize → Close<br>
+  (Do NOT type "Bearer " — Swagger adds it automatically)</li>
+  <li style="margin-bottom:12px"><strong>Create account</strong>: Accounts → POST /api/accounts → Try it out → Execute<br>
+  <pre><code>{ "accountType": "SAVINGS" }</code></pre></li>
+  <li style="margin-bottom:12px"><strong>Transfer</strong>: Transactions → POST /api/transactions/transfer/{fromAccountId} → Try it out<br>
+  <pre><code>{ "targetAccountNumber": "ACC...", "amount": 100.00, "description": "test" }</code></pre></li>
+  <li style="margin-bottom:12px"><strong>View health</strong>: Navigate to <span class="highlight">http://localhost:8080/actuator/health</span> directly in browser</li>
+  <li style="margin-bottom:12px"><strong>H2 Console</strong>: Navigate to <span class="highlight">http://localhost:8080/h2-console</span> → JDBC URL: <span class="highlight">jdbc:h2:file:./data/banking-auth-db</span> → Connect</li>
+</ol>
+
+<h3>What springdoc annotations add to Swagger</h3>
+<table>
+  <tr><th>Annotation</th><th>Effect in Swagger UI</th></tr>
+  <tr><td><span class="highlight">@Tag(name="Authentication")</span></td><td>Groups all endpoints under "Authentication" section</td></tr>
+  <tr><td><span class="highlight">@Operation(summary="...")</span></td><td>Sets the description text next to the endpoint</td></tr>
+  <tr><td><span class="highlight">SecurityScheme(type=HTTP, scheme=bearer)</span></td><td>Shows the Authorize button and Bearer token popup</td></tr>
+</table>
+
+<div class="divider"></div>
+<p style="text-align:center; color:#718096; padding:20px 0">Banking Auth API — Code Explanation Guide | Java 8 + Spring Boot 2.7 + Spring Security 5 + JWT</p>
+
+</div>
+</body>
+</html>
