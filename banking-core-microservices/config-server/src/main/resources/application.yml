@@ -1,0 +1,29 @@
+server:
+  port: ${CONFIG_SERVER_PORT:8888}
+
+spring:
+  application:
+    name: config-server
+  profiles:
+    # 'native' = serve configs from classpath, no Git backend needed.
+    # Without this, config-server tries to clone a Git repo and fails on startup.
+    # See Implementation-Notes.html #3 for full before/after analysis.
+    active: native
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: classpath:/configurations/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.cloud.config: INFO

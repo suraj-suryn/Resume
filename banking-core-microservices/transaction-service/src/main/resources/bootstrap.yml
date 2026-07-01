@@ -1,0 +1,21 @@
+# bootstrap.yml — loaded BEFORE application context (Spring Cloud Bootstrap phase)
+# Connects to config-server to fetch transaction-service.yml configuration.
+#
+# IMPORTANT: spring-cloud-starter-bootstrap dependency is required for this file
+# to be loaded in Spring Cloud 2020+. Without it, this file is silently ignored.
+# See Implementation-Notes.html #2 for full before/after analysis.
+
+spring:
+  application:
+    name: transaction-service
+  cloud:
+    config:
+      uri: ${CONFIG_SERVER_URI:http://localhost:${CONFIG_SERVER_PORT:8888}}
+      # fail-fast=true + spring-retry: retries up to 6 times if config-server is slow to start
+      # See Implementation-Notes.html #4 for full before/after analysis.
+      fail-fast: true
+      retry:
+        initial-interval: 1000
+        max-attempts: 6
+        max-interval: 2000
+        multiplier: 1.1

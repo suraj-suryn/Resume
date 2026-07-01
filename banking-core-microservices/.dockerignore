@@ -1,0 +1,15 @@
+# Build output — exclude for fast Docker context transfer
+*/target/
+
+# VCS & IDE
+.git/
+.gitignore
+.idea/
+*.iml
+**/.DS_Store
+*.class
+
+# Docs & scripts (not needed inside container images)
+docs/
+*.bat
+*.md

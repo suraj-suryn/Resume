@@ -1,0 +1,41 @@
+# Configuration for api-gateway
+# Fetched by api-gateway on startup via Spring Cloud Config Client (bootstrap.yml)
+#
+# PORT: defaults to 8090 (not 8080) to avoid conflict with banking-auth-api (Project 1).
+# See Implementation-Notes.html #7 for full before/after analysis.
+
+server:
+  port: ${GATEWAY_PORT:8090}
+
+spring:
+  cloud:
+    gateway:
+      # Auto-discover routes from Eureka — any registered service accessible at /SERVICE-NAME/**
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      # Explicit named routes for predictable path mapping
+      routes:
+        - id: account-service-route
+          uri: lb://account-service
+          predicates:
+            - Path=/api/accounts/**
+        - id: transaction-service-route
+          uri: lb://transaction-service
+          predicates:
+            - Path=/api/transactions/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:${REGISTRY_PORT:8761}/eureka/}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway

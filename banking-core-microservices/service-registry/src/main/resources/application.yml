@@ -1,0 +1,35 @@
+server:
+  port: ${REGISTRY_PORT:8761}
+
+spring:
+  application:
+    name: service-registry
+
+eureka:
+  instance:
+    hostname: ${EUREKA_HOSTNAME:localhost}
+  client:
+    # Standalone registry — does not register with itself or fetch from itself
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+  server:
+    # Don't wait for other peers on startup (standalone mode)
+    wait-time-in-ms-when-sync-empty: 0
+    # Disable self-preservation in dev (prevents false-positive "emergency!" warnings)
+    enable-self-preservation: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN

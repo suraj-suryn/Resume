@@ -1,0 +1,18 @@
+# Configuration for notification-service
+# Fetched by notification-service on startup via Spring Cloud Config Client (bootstrap.yml)
+#
+# DESIGN NOTE: No server.port — notification-service has no web server.
+# spring-boot-starter-web is not on the classpath, so Spring Boot auto-sets
+# web-application-type=NONE. No Tomcat started. Pure background Kafka consumer.
+# See Implementation-Notes.html #5 for full design rationale.
+
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST:localhost}:${KAFKA_PORT:9092}
+    consumer:
+      group-id: notification-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # StringDeserializer used: consumer receives raw JSON String and manually parses
+      # via ObjectMapper — avoids type-header issues when consuming from multiple services.
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

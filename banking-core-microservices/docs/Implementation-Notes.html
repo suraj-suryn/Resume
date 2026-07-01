@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Implementation Notes — banking-core-microservices</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: #161b22;
+            border-right: 1px solid #30363d;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #30363d;
+            background: #0d1117;
+        }
+        .sidebar-header h2 {
+            font-size: 13px;
+            font-weight: 700;
+            color: #e6edf3;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .sidebar-header p {
+            font-size: 11px;
+            color: #58a6ff;
+            margin-top: 4px;
+        }
+        .sidebar-section-title {
+            padding: 14px 20px 4px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 20px;
+            color: #8b949e;
+            text-decoration: none;
+            font-size: 12px;
+            border-left: 2px solid transparent;
+            transition: all 0.15s;
+        }
+        .sidebar a:hover {
+            color: #c9d1d9;
+            background: #21262d;
+            border-left-color: #58a6ff;
+        }
+        .sidebar-num {
+            background: #21262d;
+            color: #58a6ff;
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ===== MAIN ===== */
+        .main {
+            flex: 1;
+            padding: 40px 48px 80px;
+            max-width: 1000px;
+        }
+
+        /* ===== PAGE HEADER ===== */
+        .page-header {
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #30363d;
+        }
+        .page-header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #e6edf3;
+            margin-bottom: 12px;
+        }
+        .tag-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .tag-blue  { background: #1f3a5f; color: #58a6ff; }
+        .tag-gray  { background: #21262d; color: #8b949e; }
+        .tag-green { background: #0f2d1f; color: #3fb950; }
+        .page-note {
+            font-size: 13px;
+            color: #8b949e;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-left: 3px solid #58a6ff;
+            padding: 12px 16px;
+            border-radius: 0 6px 6px 0;
+        }
+
+        /* ===== LEGEND ===== */
+        .legend {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+            padding: 14px 20px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+        .legend-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #8b949e;
+            margin-right: 4px;
+        }
+
+        /* ===== STATUS BADGES ===== */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+        }
+        .badge-pending { background: #272b14; color: #d29922; border: 1px solid #9e6a03; }
+        .badge-working { background: #0f2d1f; color: #3fb950; border: 1px solid #1a7f37; }
+        .badge-issue   { background: #2d0f0f; color: #f85149; border: 1px solid #b91c1c; }
+
+        /* ===== CHANGE CARDS ===== */
+        .change-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            margin-bottom: 28px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .change-card:hover { border-color: #58a6ff55; }
+
+        .card-header {
+            padding: 16px 20px;
+            background: #1c2128;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .card-num {
+            background: #21262d;
+            color: #58a6ff;
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .card-title {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 600;
+            color: #e6edf3;
+        }
+        .phase-tag {
+            font-size: 11px;
+            color: #8b949e;
+            background: #21262d;
+            padding: 3px 10px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .card-body { padding: 20px; }
+
+        /* Before/After grid */
+        .ba-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .before-box, .after-box {
+            padding: 14px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.65;
+        }
+        .before-box { background: #2d0f0f; border-left: 3px solid #f85149; }
+        .after-box  { background: #0f2d1f; border-left: 3px solid #3fb950; }
+        .box-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }
+        .before-box .box-label { color: #f85149; }
+        .after-box  .box-label { color: #3fb950; }
+
+        /* Meta row */
+        .card-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            color: #8b949e;
+            flex-wrap: wrap;
+            padding-top: 12px;
+            border-top: 1px solid #21262d;
+        }
+        .meta-item { display: flex; gap: 5px; }
+        .meta-key { font-weight: 600; color: #8b949e; }
+        .meta-val { color: #c9d1d9; }
+
+        code {
+            background: #21262d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+            font-size: 11px;
+            color: #79c0ff;
+        }
+
+        /* Section divider */
+        .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #58a6ff;
+            margin: 36px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #21262d;
+        }
+
+        @media (max-width: 800px) {
+            .sidebar { display: none; }
+            .ba-grid { grid-template-columns: 1fr; }
+            .main { padding: 24px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<nav class="sidebar">
+    <div class="sidebar-header">
+        <h2>Impl. Notes</h2>
+        <p>banking-core-microservices</p>
+    </div>
+
+    <div class="sidebar-section-title">Infrastructure</div>
+    <a href="#c1"><span class="sidebar-num">1</span>Configurable Ports</a>
+    <a href="#c2"><span class="sidebar-num">2</span>bootstrap.yml</a>
+    <a href="#c3"><span class="sidebar-num">3</span>Native Profile</a>
+    <a href="#c4"><span class="sidebar-num">4</span>Config Retry</a>
+    <a href="#c7"><span class="sidebar-num">7</span>Gateway Port 8090</a>
+    <a href="#c10"><span class="sidebar-num">10</span>Startup Order</a>
+
+    <div class="sidebar-section-title">Service Design</div>
+    <a href="#c5"><span class="sidebar-num">5</span>No-Web Notification</a>
+    <a href="#c6"><span class="sidebar-num">6</span>Kafka Topic Beans</a>
+
+    <div class="sidebar-section-title">Kafka &amp; Tests</div>
+    <a href="#c8"><span class="sidebar-num">8</span>EmbeddedKafka Tests</a>
+    <a href="#c9"><span class="sidebar-num">9</span>RetryableTopic + DLT</a>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+    <div class="page-header">
+        <h1>Implementation Notes</h1>
+        <div class="tag-row">
+            <span class="tag tag-blue">banking-core-microservices</span>
+            <span class="tag tag-gray">Java 8</span>
+            <span class="tag tag-gray">Spring Boot 2.7.18</span>
+            <span class="tag tag-gray">Spring Cloud 2021.0.8</span>
+            <span class="tag tag-gray">Kafka 2.8.11</span>
+            <span class="tag tag-gray">Maven Multi-Module</span>
+        </div>
+        <div class="page-note">
+            Living tracker — one entry per architectural decision or known challenge.
+            Status updated after each phase is verified working.
+            This file is closed (all entries = WORKING) when the full system is confirmed running end-to-end.
+        </div>
+    </div>
+
+    <div class="legend">
+        <span class="legend-label">Status:</span>
+        <span class="badge badge-working">&#10003; WORKING</span>
+        <span class="badge badge-working">&#10003; WORKING</span>
+        <span class="badge badge-issue">&#10007; ISSUE</span>
+        <span style="font-size:12px;color:#8b949e;margin-left:8px;">Update status inline when each phase is confirmed.</span>
+    </div>
+
+    <!-- ===================================== -->
+    <div class="section-title">Infrastructure Decisions</div>
+    <!-- ===================================== -->
+
+    <!-- CARD 1 -->
+    <div class="change-card" id="c1">
+        <div class="card-header">
+            <span class="card-num">1</span>
+            <span class="card-title">Configurable Ports via Environment Variables</span>
+            <span class="phase-tag">Phase 1</span>
+            <span class="badge badge-working">&#10003; WORKING</span>
+        </div>
+        <div class="card-body">
+            <div class="ba-grid">
+                <div class="before-box">
+                    <div class="box-label">&#9888; Before — Problem</div>
+                    Ports hardcoded in <code>application.yml</code> (e.g. <code>server.port: 8081</code>).
+                    Changing any port requires a source code edit and rebuild.
+                    Running alongside other servers causes <code>Address already in use</code> errors with no quick fix.
+                </div>
+                <div class="after-box">
+                    <div class="box-label">&#10003; After — Solution</div>
+                    Every port uses <code>${ENV_VAR:default}</code> Spring Boot placeholder.
+                    Override at runtime via environment variable, <code>.env</code> file, or <code>-Dserver.port=XXXX</code> JVM arg.
+                    Zero code changes needed. Example: <code>set ACCOUNT_SERVICE_PORT=9081</code> then start.
+                </div>
+            </div>
+            <div class="card-meta">
+                <div class="meta-item"><span class="meta-key">Services:</span><span class="meta-val">All 6</span></div>
+                <div class="meta-item"><span class="meta-key">Service env vars:</span><span class="meta-val">CONFIG_SERVER_PORT (8888), REGISTRY_PORT (8761), GATEWAY_PORT (8090), ACCOUNT_SERVICE_PORT (8081), TRANSACTION_SERVICE_PORT (8082), NOTIFICATION_SERVICE_PORT (8083)</span></div>
+                <div class="meta-item"><span class="meta-key">Infra env vars:</span><span class="meta-val">KAFKA_PORT (9092), ZOOKEEPER_PORT (2181), KAFDROP_PORT (9000)</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 2 -->
+    <div class="change-card" id="c2">
+        <div class="card-header">
+            <span class="card-num">2</span>
+            <span class="card-title">bootstrap.yml for Config Clients (Spring Cloud 2020+ Requirement)</span>
+            <span class="phase-tag">Phase 1</span>
+            <span class="badge badge-working">&#10003; WORKING</span>
+        </div>
+        <div class="card-body">
+            <div class="ba-grid">
+                <div class="before-box">
+                    <div class="box-label">&#9888; Before — Problem</div>
+                    In Spring Cloud 2020+, <code>bootstrap.yml</code> is <strong>not loaded by default</strong>.
+                    Services start with wrong config values — silently use <code>application.yml</code> defaults
+                    instead of fetching real values from config-server.
+                    Config properties load too late in the application context lifecycle.
+                </div>
+                <div class="after-box">
+                    <div class="box-label">&#10003; After — Solution</div>
+                    <code>spring-cloud-starter-bootstrap</code> dependency added explicitly to each client service POM.
+                    Each client has a <code>bootstrap.yml</code> with <code>spring.cloud.config.uri</code>.
+                    Config is fetched <em>before</em> the main application context loads — correct values always used.
+                </div>
+            </div>
+            <div class="card-meta">
+                <div class="meta-item"><span class="meta-key">Services:</span><span class="meta-val">api-gateway, account-service, transaction-service, notification-service</span></div>
+                <div class="meta-item"><span class="meta-key">Key dependency:</span><span class="meta-val">spring-cloud-starter-bootstrap (must be declared explicitly in Spring Cloud 2021.x)</span></div>
+                <div class="meta-item"><span class="meta-key">Key config:</span><span class="meta-val">spring.cloud.config.uri: ${CONFIG_SERVER_URI:http://localhost:${CONFIG_SERVER_PORT:8888}}</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 3 -->
+    <div class="change-card" id="c3">
+        <div class="card-header">
+            <span class="card-num">3</span>
+            <span class="card-title">Config Server Native Profile (Classpath-Based Config, No Git)</span>
+            <span class="phase-tag">Phase 1</span>
+            <span class="badge badge-working">&#10003; WORKING</span>
+        </div>
+        <div class="card-body">
+            <div class="ba-grid">
+                <div class="before-box">
+                    <div class="box-label">&#9888; Before — Problem</div>
+                    Spring Cloud Config Server defaults to a <strong>Git backend</strong>.
+                    Without an explicit profile, it tries to clone a remote Git repo on startup.
+                    Fails with <code>CannotCreateTransactionException</code> or <code>JGitInternalException</code>
+                    if no Git remote is configured. Requires internet access just to run locally.
+                </div>
+                <div class="after-box">
+                    <div class="box-label">&#10003; After — Solution</div>
+                    <code>spring.profiles.active=native</code> set in config-server <code>application.yml</code>.
+                    Config files served from <code>classpath:/configurations/</code> — no Git, no network.
+                    Per-service files: <code>account-service.yml</code>, <code>transaction-service.yml</code>, etc.
+                    Works fully offline. Config file name = <code>spring.application.name</code> of the client.
+                </div>
+            </div>
+            <div class="card-meta">
+                <div class="meta-item"><span class="meta-key">Services:</span><span class="meta-val">config-server only</span></div>
+                <div class="meta-item"><span class="meta-key">Config files served:</span><span class="meta-val">config-server/src/main/resources/configurations/{service-name}.yml</span></div>
+                <div class="meta-item"><span class="meta-key">Key property:</span><span class="meta-val">spring.cloud.config.server.native.search-locations: classpath:/configurations/</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 4 -->
+    <div class="change-card" id="c4">
+        <div class="card-header">
+            <span class="card-num">4</span>
+            <span class="card-title">Config Client Retry on Slow Config-Server Startup</span>
+            <span class="phase-tag">Phase 1</span>
+            <span class="badge badge-working">&#10003; WORKING</span>
+        </div>
+        <div class="card-body">
+            <div class="ba-grid">
+                <div class="before-box">
+                    <div class="box-label">&#9888; Before — Problem</div>
+                    Config-server takes several seconds to start (JVM + Spring context init).
+                    If account-service or api-gateway start simultaneously, they connect once,
+                    fail immediately with <code>Connection refused</code>, and crash.
+                    Requires manual startup delays or ordering in scripts — fragile.
+                </div>
+                <div class="after-box">
+                    <div class="box-label">&#10003; After — Solution</div>
+                    <code>spring.cloud.config.fail-fast=true</code> + <code>spring-retry</code> + <code>spring-boot-starter-aop</code>
+                    added to each client service.
+                    Services retry up to 6 times with exponential backoff (1s initial, ×1.1 multiplier, max 2s).
+                    Config-server has ~10s window to become ready — sufficient for local and Docker startup.
+                </div>
+            </div>
+            <div class="card-meta">
+                <div class="meta-item"><span class="meta-key">Services:</span><span class="meta-val">api-gateway, account-service, transaction-service, notification-service</span></div>
+                <div class="meta-item"><span class="meta-key">Required deps:</span><span class="meta-val">spring-retry + spring-boot-starter-aop (both needed — AOP provides retry interception)</span></div>
+                <div class="meta-item"><span class="meta-key">Config:</span><span class="meta-val">fail-fast: true, max-attempts: 6, initial-interval: 1000ms, multiplier: 1.1, max-interval: 2000ms</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 7 -->
+    <div class="change-card" id="c7">
+        <div class="card-header">
+            <span class="card-num">7</span>
+            <span class="card-title">API Gateway Default Port Changed 8080 &#8594; 8090</span>
+            <span class="phase-tag">Phase 2</span>
+            <span class="badge badge-working">&#10003; WORKING</span>
+        </div>
+        <div class="card-body">
+            <div class="ba-grid">
+                <div class="before-box">
+                    <div class="box-label">&#9888; Before — Problem</div>
+                    Standard gateway default port 8080 directly conflicts with <code>banking-auth-api</code> (Project 1)
+                    which also runs on 8080. Running both projects side-by-side — as expected in a portfolio demo —
+                    requires stopping one first. Defeats the demonstration purpose.
+                </div>
+                <div class="after-box">
+                    <div class="box-label">&#10003; After — Solution</div>
+                    <code>GATEWAY_PORT</code> env var defaults to <code>8090</code> in <code>api-gateway.yml</code>.
+                    banking-auth-api stays on 8080 unchanged.
+                    Both projects run simultaneously on the same machine with no port conflicts.
+                    Still overridable: <code>set GATEWAY_PORT=8099</code>
+                </div>
+            </div>
+            <div class="card-meta">
+                <div class="meta-item"><span class="meta-key">Services:</span><span class="meta-val">api-gateway</span></div>
+                <div class="meta-item"><span class="meta-key">Conflict avoided with:</span><span class="meta-val">banking-auth-api (Project 1) on port 8080</span></div>
+                <div class="meta-item"><span class="meta-key">New default port:</span><span class="meta-val">8090 — still overridable via GATEWAY_PORT env var</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 10 -->
+    <div class="change-card" id="c10">
+        <div class="card-header">
+            <span class="card-num">10</span>
+            <span class="card-title">Startup Order: Config &#8594; Registry &#8594; Services &#8594; Gateway</span>
+            <span class="phase-tag">Phase 6</span>
+            <span class="badge badge-working">&#10003; WORKING</span>
+        </div>
+        <div class="card-body">
+            <div class="ba-grid">
+                <div class="before-box">
+                    <div class="box-label">&#9888; Before — Problem</div>
+                    Services started out of order crash immediately:
+                    account-service can't reach config-server (not up yet) → <code>Connection refused</code>.
+                    api-gateway routes to services not yet registered in Eureka → <code>503 No instances available</code>.
+                    Docker Compose <code>depends_on</code> by default only waits for container <em>start</em>, not service <em>readiness</em>.
+                </div>
+                <div class="after-box">
+                    <div class="box-label">&#10003; After — Solution</div>
+                    Docker Compose uses <code>depends_on: condition: service_healthy</code> with HTTP health checks.
+                    Each service declares a <code>healthcheck</code> pointing to <code>/actuator/health</code>.
+                    Enforced order: config-server → service-registry → account/transaction/notification → api-gateway.
+                    Local <code>start-services.bat</code> follows the same order with port-readiness polling.
+                </div>
+            </div>
+            <div class="card-meta">
+                <div class="meta-item"><span class="meta-key">Services:</span><span class="meta-val">All 6</span></div>
+                <div class="meta-item"><span class="meta-key">Mechanism:</span><span class="meta-val">Docker Compose healthcheck + depends_on: condition: service_healthy</span></div>
+                <div class="meta-item"><span class="meta-key">Health endpoints:</span><span class="meta-val">config-server :8888/actuator/health → service-registry :8761/actuator/health → business services → gateway :8090/actuator/health</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================== -->
+    <div class="section-title">Service Design Decisions</div>
+    <!-- ===================================== -->
+
+    <!-- CARD 5 -->
+    <div class="change-card" id="c5">
+        <div class="card-header">
+            <span class="card-num">5</span>
+            <span class="card-title">Notification-Service: No Web Server (Pure Kafka Consumer Process)</span>
+            <span class="phase-tag">Phase 5</span>
+            <span class="badge badge-working">&#10003; WORKING</span>
+        </div>
+        <div class="card-body">
+            <div class="ba-grid">
+                <div class="before-box">
+                    <div class="box-label">&#9888; Before — Problem</div>
+                    Adding <code>spring-boot-starter-web</code> starts an embedded Tomcat server that serves
+                    zero REST endpoints. Wastes ~50MB heap, binds an unnecessary port, exposes an empty
+                    service on the network. Requires Eureka registration despite having nothing to register.
+                </div>
+                <div class="after-box">
+                    <div class="box-label">&#10003; After — Solution</div>
+                    <code>spring-boot-starter-web</code> excluded from POM entirely.
+                    Without web starter on classpath, Spring Boot auto-detects <code>web-application-type=NONE</code>.
+                    No Tomcat started. No port bound. Pure JVM background process consuming Kafka events.
+                    No Eureka registration needed — nothing routes to this service.
+                </div>
+            </div>
+            <div class="card-meta">
+                <div class="meta-item"><span class="meta-key">Services:</span><span class="meta-val">notification-service only</span></div>
+                <div class="meta-item"><span class="meta-key">Trade-off:</span><span class="meta-val">No HTTP health endpoint — monitor via Kafka consumer group lag in Kafdrop UI (:9000)</span></div>
+                <div class="meta-item"><span class="meta-key">Eureka:</span><span class="meta-val">Not registered — consumers don't need discovery; no service calls notification-service</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 6 -->
+    <div class="change-card" id="c6">
+        <div class="card-header">
+            <span class="card-num">6</span>
+            <span class="card-title">Explicit Kafka Topic Creation via @Bean NewTopic (KafkaTopicConfig)</span>
+            <span class="phase-tag">Phase 3</span>
+            <span class="badge badge-working">&#10003; WORKING</span>
+        </div>
+        <div class="card-body">
+            <div class="ba-grid">
+                <div class="before-box">
+                    <div class="box-label">&#9888; Before — Problem</div>
+                    Relying on Kafka's <code>auto.create.topics.enable=true</code> creates topics with defaults:
+                    1 partition, replication factor 1. No control over partitioning strategy.
+                    In production, this setting is typically <strong>disabled</strong> — topics must be pre-created.
+                    Missing topics cause silent message drops with no error until consumed.
+                </div>
+                <div class="after-box">
+                    <div class="box-label">&#10003; After — Solution</div>
+                    <code>KafkaTopicConfig</code> class with one <code>@Bean NewTopic</code> per topic.
+                    <code>KafkaAdmin</code> automatically creates or verifies topics on startup.
+                    Explicit partition count (3) and replication factor (1 dev / 3 prod) per topic.
+                    Clean, production-aligned approach — safe even when auto-creation is disabled.
+                </div>
+            </div>
+            <div class="card-meta">
+                <div class="meta-item"><span class="meta-key">Services:</span><span class="meta-val">account-service (producer config), transaction-service (producer config)</span></div>
+                <div class="meta-item"><span class="meta-key">Topics:</span><span class="meta-val">account.created, account.updated, transaction.initiated, transaction.completed, notification.DLT</span></div>
+                <div class="meta-item"><span class="meta-key">Class:</span><span class="meta-val">KafkaTopicConfig.java in account-service/config/ and transaction-service/config/</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================== -->
+    <div class="section-title">Kafka &amp; Testing Decisions</div>
+    <!-- ===================================== -->
+
+    <!-- CARD 8 -->
+    <div class="change-card" id="c8">
+        <div class="card-header">
+            <span class="card-num">8</span>
+            <span class="card-title">@EmbeddedKafka with Port 0 (Random) for Test Isolation</span>
+            <span class="phase-tag">Phase 7</span>
+            <span class="badge badge-working">&#10003; WORKING</span>
+        </div>
+        <div class="card-body">
+            <div class="ba-grid">
+                <div class="before-box">
+                    <div class="box-label">&#9888; Before — Problem</div>
+                    Without explicit port configuration, <code>@EmbeddedKafka</code> may bind on a
+                    fixed port (e.g. 9092). If Docker Kafka is running on 9092 simultaneously,
+                    the test fails with <code>Address already in use: 9092</code>.
+                    Tests cannot run alongside a live Kafka environment.
+                </div>
+                <div class="after-box">
+                    <div class="box-label">&#10003; After — Solution</div>
+                    <code>@EmbeddedKafka(partitions=1, brokerProperties={"listeners=PLAINTEXT://localhost:0"})</code>
+                    — port <code>0</code> instructs the OS to assign a random free port.
+                    Test config wires broker address via <code>${spring.embedded.kafka.brokers}</code>.
+                    Tests are fully isolated from any running Kafka instance. CI always passes.
+                </div>
+            </div>
+            <div class="card-meta">
+                <div class="meta-item"><span class="meta-key">Services:</span><span class="meta-val">account-service test, transaction-service test, notification-service test</span></div>
+                <div class="meta-item"><span class="meta-key">Dependency:</span><span class="meta-val">spring-kafka-test (test scope) — already in all 3 service POMs</span></div>
+                <div class="meta-item"><span class="meta-key">Port strategy:</span><span class="meta-val">0 = OS-assigned random — guaranteed no conflict with real Kafka on 9092</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 9 -->
+    <div class="change-card" id="c9">
+        <div class="card-header">
+            <span class="card-num">9</span>
+            <span class="card-title">@RetryableTopic with Dead Letter Topic (DLT) — Non-Blocking Retry</span>
+            <span class="phase-tag">Phase 5</span>
+            <span class="badge badge-working">&#10003; WORKING</span>
+        </div>
+        <div class="card-body">
+            <div class="ba-grid">
+                <div class="before-box">
+                    <div class="box-label">&#9888; Before — Problem</div>
+                    Without retry, a single transient failure (NPE, downstream timeout, deserialization error)
+                    causes the Kafka consumer to skip the message permanently — <strong>silent data loss</strong>.
+                    Manual DLQ requires writing a custom <code>SeekToCurrentErrorHandler</code> and
+                    complex <code>DeadLetterPublishingRecoverer</code> configuration.
+                </div>
+                <div class="after-box">
+                    <div class="box-label">&#10003; After — Solution</div>
+                    <code>@RetryableTopic(attempts="3", backoff=@Backoff(delay=1000))</code> on consumer method.
+                    Spring Kafka retries 3× with 1s backoff automatically (non-blocking — other messages still processed).
+                    After 3 failures, message is routed to <code>notification.DLT</code> topic for inspection via Kafdrop.
+                    Zero manual DLQ plumbing — fully Spring-managed.
+                </div>
+            </div>
+            <div class="card-meta">
+                <div class="meta-item"><span class="meta-key">Services:</span><span class="meta-val">notification-service</span></div>
+                <div class="meta-item"><span class="meta-key">DLT topic:</span><span class="meta-val">notification.DLT — inspectable in Kafdrop UI at http://localhost:${KAFDROP_PORT:9000}</span></div>
+                <div class="meta-item"><span class="meta-key">Retry config:</span><span class="meta-val">3 attempts, 1s backoff — override via @Backoff parameters</span></div>
+                <div class="meta-item"><span class="meta-key">Non-blocking:</span><span class="meta-val">Failed message retry goes to a retry topic, not blocking the main partition</span></div>
+            </div>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>
